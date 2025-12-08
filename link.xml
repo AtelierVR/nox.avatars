@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<linker>
+	<assembly fullname="Nox.Avatars" preserve="all" />
+	<assembly fullname="Nox.Avatars.Editor" preserve="all" />
+	<assembly fullname="Nox.Avatars.Pipeline" preserve="all" />
+	<assembly fullname="Nox.Avatars.Runtime" preserve="all" />
+	<assembly fullname="Nox.Avatars.Runtime.Editor" preserve="all" />
+	<assembly fullname="Nox.CCK.Avatars" preserve="all" />
+	<assembly fullname="Nox.Mods.Avatars" preserve="all" />
+</linker>

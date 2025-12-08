@@ -1,0 +1,23 @@
+{
+  "name": "Nox.Avatars.Editor",
+  "rootNamespace": "",
+  "references": [
+    "Nox.CCK",
+    "UniTask",
+    "Nox.Avatars.Parameters",
+    "Nox.Avatars",
+    "Nox.CCK.Avatars",
+    "Unity.Animation.Rigging"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

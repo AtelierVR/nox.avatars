@@ -1,0 +1,76 @@
+{
+  "type": "mod",
+  "id": "nox.avatars",
+  "provides": [
+    "fr.hactazia.sdk.avatar",
+    "avatar"
+  ],
+  "name": "Avatar",
+  "version": "1.0.0",
+  "description": "Provides the Avatar API for the game.",
+  "license": "GPL-3.0",
+  "icon": null,
+  "contact": {
+    "email": "hactazia@gmail.com",
+    "source": "https://github.com/AtelierVR/nox.avatars",
+    "website": "https://nox.hactazia.fr/",
+    "issues": "https://github.com/AtelierVR/nox.avatars/issues"
+  },
+  "authors": [
+    {
+      "name": "Hactazia",
+      "email": "hactazia@gmail.com",
+      "website": "https://hactazia.fr/"
+    }
+  ],
+  "contributors": [],
+  "relations": [
+    {
+      "id": "network",
+      "type": "depends",
+      "version": ">=1.0.0"
+    },
+    {
+      "id": "ui",
+      "type": "depends",
+      "version": ">=1.0.0"
+    },
+    {
+      "id": "search",
+      "type": "depends",
+      "version": ">=1.0.0"
+    },
+    {
+      "id": "table",
+      "type": "depends",
+      "version": ">=1.0.0"
+    },
+    {
+      "id": "user",
+      "type": "depends",
+      "version": ">=1.0.0"
+    },
+    {
+      "id": "controller",
+      "type": "depends",
+      "version": ">=1.0.0"
+    }
+  ],
+  "entrypoints": {
+    "main": [
+      "Nox.Avatars.Runtime.Main"
+    ],
+    "editor": [
+      "Nox.Avatars.Runtime.Editor.Editor",
+      "Nox.Avatars.Runtime.Editor.BuilderPanel",
+      "Nox.Avatars.Runtime.Editor.PublisherPanel"
+    ],
+    "client": [
+      "Nox.Avatars.Runtime.Client"
+    ]
+  },
+  "references": [],
+  "sides": [],
+  "permissions": [],
+  "kernel": true
+}

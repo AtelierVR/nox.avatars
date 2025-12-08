@@ -1,0 +1,35 @@
+{
+    "name": "Nox.Avatars.Runtime.Editor",
+    "rootNamespace": "",
+    "references": [
+        "Nox.CCK",
+        "Nox.Avatars",
+        "Nox.CCK.Avatars",
+        "Nox.Players",
+        "Nox.Entities",
+        "Nox.Users",
+        "Nox.Network",
+        "Nox.Tables",
+        "Nox.Search",
+        "Nox.UI",
+        "Nox.Editor.Panel",
+        "Nox.Avatars.Editor",
+        "Nox.Controllers",
+        "Nox.Avatars.Builder",
+        "Nox.Runtime.Avatars",
+        "Nox.Avatars.Pipeline",
+        "Nox.Avatars.Parameters",
+        "UniTask"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

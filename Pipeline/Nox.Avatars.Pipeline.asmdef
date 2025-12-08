@@ -1,0 +1,23 @@
+{
+  "name": "Nox.Avatars.Pipeline",
+  "rootNamespace": "",
+  "references": [
+    "Nox.CCK",
+    "UniTask",
+    "Nox.Avatars",
+    "Nox.CCK.Avatars",
+    "Unity.ScriptableBuildPipeline",
+    "Unity.ScriptableBuildPipeline.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
