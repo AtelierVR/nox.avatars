@@ -5,7 +5,6 @@ using Nox.Avatars;
 using Nox.CCK.Build;
 using UnityEngine;
 using Nox.CCK.Utils;
-using Nox.Players;
 
 namespace Nox.CCK.Avatars {
 	public sealed class AvatarDescriptor : MonoBehaviour, IAvatarDescriptor, ICompilable {
@@ -54,18 +53,6 @@ namespace Nox.CCK.Avatars {
 		}
 
 		#endregion Animator
-
-		#region Runtime
-
-		private IPlayer _player;
-
-		public void AttachPlayer(IPlayer player)
-			=> _player = player;
-
-		public IPlayer GetAttachedPlayer()
-			=> _player;
-
-		#endregion
 
 		#region Modules
 
