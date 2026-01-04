@@ -236,9 +236,10 @@ namespace Nox.Avatars.Runtime.client {
             if (texture > 5) texture -= 4;
             if (!Page.IsDownloading().Item1) cacheProgress.value = 0;
 
-            var tex = $"icons/cache{texture}.png";
+            var tex = $"ui:icons/cache{texture}.png";
 
-            if (_lastTextureCaching != tex) cacheIcon.sprite = Client.GetAsset<Sprite>(_lastTextureCaching = tex);
+            if (_lastTextureCaching != tex) 
+                cacheIcon.sprite = Client.GetAsset<Sprite>(_lastTextureCaching = tex);
 
             cacheLabel.UpdateText(
                 "avatar.cache."
