@@ -5,24 +5,25 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using Nox.Avatars;
 using Nox.CCK.Avatars;
+using Nox.CCK.Utils;
 using UnityEngine;
 using Logger = Nox.CCK.Utils.Logger;
 using Object = UnityEngine.Object;
 
 namespace Nox.Avatars.Runtime {
 	public class AssetRuntimeAvatar : BaseRuntimeAvatar {
-		public (string ns, string path) Path;
+		public ResourceIdentifier Path;
 
-		public static async UniTask<AssetRuntimeAvatar> Load(string ns, string path, Dictionary<string, object> arguments, Action<float> progress, CancellationToken token) {
+		public static async UniTask<AssetRuntimeAvatar> Load(ResourceIdentifier path, Dictionary<string, object> arguments, Action<float> progress, CancellationToken token) {
 			progress?.Invoke(0);
 
 			var avatar = new AssetRuntimeAvatar {
-				Path      = (ns, path),
+				Path      = path,
 				Arguments = arguments
 			};
 
 			// Load the avatar from the bundle (prefab)
-			var prefab = Main.Instance.CoreAPI.AssetAPI.GetAsset<GameObject>(ns, path);
+			var prefab = Main.Instance.CoreAPI.AssetAPI.GetAsset<GameObject>(path);
 
 			if (!prefab) {
 				Logger.LogError($"No prefab found in avatar bundle: {path}");

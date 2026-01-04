@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Nox.Avatar;
+using Nox.CCK.Utils;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -45,7 +46,7 @@ namespace Nox.Avatars {
 		/// <param name="progress"></param>
 		/// <param name="token"></param>
 		/// <returns></returns>
-		public UniTask<IRuntimeAvatar> LoadFromAssets(string modId, string path, Dictionary<string, object> arguments = null, Action<float> progress = null, CancellationToken token = default);
+		public UniTask<IRuntimeAvatar> LoadFromAssets(ResourceIdentifier path, Dictionary<string, object> arguments = null, Action<float> progress = null, CancellationToken token = default);
 
 		/// <summary>
 		/// Load an avatar from a given cache hash.

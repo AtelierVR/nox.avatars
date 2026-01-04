@@ -16,7 +16,7 @@
         "Nox.Avatars.Editor",
         "Nox.Controllers",
         "Nox.Avatars.Builder",
-        "Nox.Runtime.Avatars",
+        "Nox.Avatars.Runtime",
         "Nox.Avatars.Pipeline",
         "Nox.Avatars.Parameters",
         "UniTask"

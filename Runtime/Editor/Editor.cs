@@ -7,7 +7,7 @@ using Nox.Users;
 
 namespace Nox.Avatars.Runtime.Editor {
 	public class Editor : IEditorModInitializer {
-		internal static EditorModCoreAPI CoreAPI;
+		internal static IEditorModCoreAPI CoreAPI;
 
 		private LanguagePack        _lang;
 		private EventSubscription[] _events = Array.Empty<EventSubscription>();
@@ -17,7 +17,7 @@ namespace Nox.Avatars.Runtime.Editor {
 				.GetMod("user")
 				?.GetInstance<IUserAPI>();
 
-		public void OnInitializeEditor(EditorModCoreAPI api) {
+		public void OnInitializeEditor(IEditorModCoreAPI api) {
 			CoreAPI = api;
 			_lang   = api.AssetAPI.GetAsset<LanguagePack>("lang.asset");
 			LanguageManager.AddPack(_lang);

@@ -1,5 +1,5 @@
 {
-  "name": "Nox.Runtime.Avatars",
+  "name": "Nox.Avatars.Runtime",
   "rootNamespace": "",
   "references": [
     "Nox.CCK",

@@ -56,6 +56,16 @@
       "version": ">=1.0.0"
     }
   ],
+  "constraints": [
+    {
+      "type": "after",
+      "id": "network"
+    },
+    {
+      "type": "after",
+      "id": "search"
+    }
+  ],
   "entrypoints": {
     "main": [
       "Nox.Avatars.Runtime.Main"

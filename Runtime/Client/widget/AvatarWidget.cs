@@ -35,7 +35,7 @@ namespace Nox.Avatars.Runtime.widget {
 			=> 98;
 
 		internal static IAvatarIdentifier GetCurrentAvatarIdentifier() {
-			var controller = Main.Instance.ControllerAPI?.GetCurrent();
+			var controller = Main.Instance.ControllerAPI?.Current;
 			if (controller is not IControllerAvatar ca)
 				return null;
 
@@ -101,7 +101,7 @@ namespace Nox.Avatars.Runtime.widget {
 				return false;
 			}
 
-			var prefab    = Client.GetAsset<GameObject>("prefabs/grid_item.prefab", "ui");
+			var prefab    = Client.GetAsset<GameObject>("ui:prefabs/grid_item.prefab");
 			var instance  = Instantiate(prefab, parent);
 			var component = instance.AddComponent<AvatarWidget>();
 			component._mid = menu.GetId();
@@ -111,7 +111,7 @@ namespace Nox.Avatars.Runtime.widget {
 			instance.name = $"[{component.GetKey()}_{instance.GetInstanceID()}]";
 			values        = (instance, component);
 
-			prefab               = Client.GetAsset<GameObject>("prefabs/large_widget.prefab", "ui");
+			prefab               = Client.GetAsset<GameObject>("ui:prefabs/large_widget.prefab");
 			component._content   = Instantiate(prefab, Reference.GetComponent<RectTransform>("content", instance));
 			component._image     = Reference.GetComponent<Image>("image", component._content);
 			component._ratio     = Reference.GetComponent<AspectRatioFitter>("image_ratio", component._content);
@@ -126,7 +126,7 @@ namespace Nox.Avatars.Runtime.widget {
 		}
 
 		private async UniTask UpdateIcon() {
-			_icon.sprite = await Client.GetAssetAsync<Sprite>("icons/avatar.png", "ui");
+			_icon.sprite = await Client.GetAssetAsync<Sprite>("ui:icons/avatar.png");
 		}
 	}
 }

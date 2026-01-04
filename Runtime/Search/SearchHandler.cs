@@ -25,7 +25,7 @@ namespace Nox.Avatars.Runtime.Search {
 
 		public Texture2D GetIcon()
 			=> Main.Instance.CoreAPI.AssetAPI
-				.GetAsset<Texture2D>("ui","icons/avatar.png");
+				.GetAsset<Texture2D>("ui:icons/avatar.png");
 
 		public string GetDescriptionKey()
 			=> "avatar.search.description";
