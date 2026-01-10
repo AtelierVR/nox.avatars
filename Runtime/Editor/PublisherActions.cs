@@ -212,7 +212,17 @@ namespace Nox.Avatars.Runtime.Editor {
 				var fileData   = await File.ReadAllBytesAsync(builtFilePath);
 				var fileSizeMB = fileData.Length / (1024.0 * 1024.0);
 
-				ShowBuildProgress(0.8f, $"Uploading {fileSizeMB:F1} MB file...");
+				ShowBuildProgress(0.77f, $"Calculating file hash for {fileSizeMB:F1} MB file...");
+
+				// Calculate file hash for validation
+				string fileHash = null;
+				using (var sha256 = System.Security.Cryptography.SHA256.Create()) {
+					var hashBytes = sha256.ComputeHash(fileData);
+					fileHash = System.BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+				}
+
+				Logger.Log($"File hash: {fileHash}");
+				ShowBuildProgress(0.78f, $"Starting upload of {fileSizeMB:F1} MB file...");
 
 				var search = await Main.Instance.Network.SearchAssets(
 					_avatar.GetId(),
@@ -246,21 +256,80 @@ namespace Nox.Avatars.Runtime.Editor {
 					return;
 				}
 
-				var uploadSuccess = await Main.Instance.Network.UploadAssetFile(
+				ShowBuildProgress(0.8f, $"Uploading {fileSizeMB:F1} MB file...");
+
+				var uploadResponse = await Main.Instance.Network.UploadAssetFile(
 					_avatar.GetId(),
 					asset.GetId(),
 					fileData,
+					fileHash,
 					_avatar.GetServerAddress(),
 					onProgress: progress => {
-						var totalSize    = fileData.Length / (1024.0 * 1024.0);
-						var sizeUploaded = progress        * totalSize;
-						ShowBuildProgress(0.85f + progress * 0.15f, $"Uploading... {sizeUploaded:F2} MB / {totalSize:F2} MB - {progress * 100:F0}%");
+						var sizeUploaded = progress * fileSizeMB;
+						ShowBuildProgress(0.8f + progress * 0.1f, $"Uploading... {sizeUploaded:F2} MB / {fileSizeMB:F2} MB - {progress * 100:F0}%");
 					}
 				);
 
-				if (!uploadSuccess) {
+				if (uploadResponse == null || !uploadResponse.success) {
 					HideBuildProgress();
-					ShowResultDialog(false, "Failed to upload avatar file.");
+					ShowResultDialog(false, uploadResponse?.message ?? "Failed to upload avatar file.");
+					return;
+				}
+
+				Logger.Log($"Upload queued: {uploadResponse.message} (Status: {uploadResponse.status}, Queue position: {uploadResponse.queue_position})");
+				
+				// Poll asset status until processing is complete
+				ShowBuildProgress(0.9f, $"Processing asset... (Queue position: {uploadResponse.queue_position})");
+				
+				var maxAttempts = 300; // 5 minutes max with 1 second interval
+				var attempt = 0;
+				var isProcessing = true;
+
+				while (isProcessing && attempt < maxAttempts) {
+					await UniTask.Delay(1000); // Wait 1 second between status checks
+					attempt++;
+
+					var status = await Main.Instance.Network.GetAssetStatus(
+						_avatar.GetId(),
+						asset.GetId(),
+						_avatar.GetServerAddress()
+					);
+
+					if (status == null) {
+						Logger.LogWarning($"Failed to get asset status (attempt {attempt})");
+						continue;
+					}
+
+					Logger.LogDebug($"Asset status: {status.status}, progress: {status.progress}%, queue: {status.queue_position}");
+
+					switch (status.status) {
+						case "pending":
+							ShowBuildProgress(0.9f, $"Waiting in queue... (Position: {status.queue_position})");
+							break;
+						case "processing":
+							var processingProgress = 0.9f + (status.progress / 100f) * 0.1f;
+							ShowBuildProgress(processingProgress, $"Processing asset... {status.progress}%");
+							break;
+						case "completed":
+							isProcessing = false;
+							Logger.Log($"Asset processing completed. Hash: {status.hash}, Size: {status.size} bytes");
+							break;
+						case "failed":
+							HideBuildProgress();
+							ShowResultDialog(false, $"Asset processing failed: {status.error ?? "Unknown error"}");
+							return;
+						case "empty":
+							Logger.LogWarning("Asset status is empty, continuing...");
+							break;
+						default:
+							Logger.LogWarning($"Unknown asset status: {status.status}");
+							break;
+					}
+				}
+
+				if (attempt >= maxAttempts) {
+					HideBuildProgress();
+					ShowResultDialog(false, "Asset processing timed out. Please check the server status.");
 					return;
 				}
 

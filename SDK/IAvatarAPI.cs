@@ -74,11 +74,13 @@ namespace Nox.Avatars {
 
 		public UniTask<IAssetSearchResponse> SearchAssets(string identifier, IAssetSearchRequest data, string from = null);
 
-		public UniTask<bool> UploadThumbnail(string identifier, Texture2D texture, string from = null, Action<float> onProgress = null);
+	public UniTask<bool> UploadThumbnail(string identifier, Texture2D texture, string from = null, Action<float> onProgress = null);
 
-		public UniTask<bool> UploadAssetFile(string identifier, uint assetId, byte[] fileData, string fileName, string fileHash = null, string from = null, Action<float> onProgress = null);
+	public UniTask<IUploadAssetResponse> UploadAssetFile(string identifier, uint assetId, byte[] fileData, string fileHash = null, string from = null, Action<float> onProgress = null);
 
-		public UniTask<IAvatarAsset> CreateAsset(string identifier, ICreateAssetRequest data, string from = null);
+	public UniTask<IAssetStatusResponse> GetAssetStatus(string identifier, uint assetId, string from = null);
+
+	public UniTask<IAvatarAsset> CreateAsset(string identifier, ICreateAssetRequest data, string from = null);
 
 		public ICaching DownloadToCache(string url, string hash = null, string from = null, UnityAction<float> progress = null, CancellationToken token = default);
 

@@ -21,7 +21,8 @@
     "Nox.Avatars.Parameters",
     "Nox.Editor.Panel",
     "Nox.Avatars.Editor",
-    "Nox.Controllers"
+    "Nox.Controllers",
+    "Nox.CCK.Network"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

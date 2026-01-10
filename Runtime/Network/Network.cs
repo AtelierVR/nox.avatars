@@ -1,8 +1,10 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using Nox.CCK.Avatars;
+using Nox.CCK.Network;
 using Nox.CCK.Utils;
 using UnityEngine;
 using UnityEngine.Events;
@@ -19,13 +21,13 @@ namespace Nox.Avatars.Runtime.Network {
 			Main.Instance.CoreAPI.EventAPI.Emit("avatar_fetch", avatar);
 		}
 
-		public UniTask<Avatar> Fetch(IAvatarIdentifier identifier, string from = null)
-			=> Fetch(identifier.ToString(), from);
+		public UniTask<Avatar> Fetch(IAvatarIdentifier identifier, string from = null, CancellationToken cancellationToken = default)
+			=> Fetch(identifier.ToString(), from, cancellationToken);
 
-		public UniTask<Avatar> Fetch(uint id, string from = null)
-			=> Fetch(id.ToString(), from);
+		public UniTask<Avatar> Fetch(uint id, string from = null, CancellationToken cancellationToken = default)
+			=> Fetch(id.ToString(), from, cancellationToken);
 
-		public async UniTask<Avatar> Fetch(string identifier, string from = null) {
+		public async UniTask<Avatar> Fetch(string identifier, string from = null, CancellationToken cancellationToken = default) {
 			if (Main.Instance.NetworkAPI == null)
 				return null;
 
@@ -42,21 +44,25 @@ namespace Nox.Avatars.Runtime.Network {
 			if (address == ide.GetServer())
 				ide = new AvatarIdentifier(ide.GetId(), ide.GetMetadata(), AvatarIdentifier.LocalServer);
 
-			var request = Main.Instance.NetworkAPI.MakeRequest();
-			await request.SetMasterUrl(address, $"/api/avatars/{ide.ToString()}");
-			await request.Send();
-			var response = request.GetMasterResponse<Avatar>();
-			if (response.HasError()) {
-				Logger.LogError($"Failed to fetch avatar {identifier} from {address}: {response.GetError().GetMessage()}");
+			var request = await RequestNode.To(address, $"/api/avatars/{ide.ToString()}");
+			if (request == null) {
+				Logger.LogError($"Failed to create request for avatar {identifier}");
 				return null;
 			}
 
-			var avatar = response.GetData();
+			await request.Send(cancellationToken);
+			var response = await request.Node<Avatar>(cancellationToken);
+			if (response.HasError()) {
+				Logger.LogError($"Failed to fetch avatar {identifier} from {address}: {response.Error.Message}");
+				return null;
+			}
+
+			var avatar = response.Data;
 			InvokeFetch(avatar);
 			return avatar;
 		}
 
-		public async UniTask<SearchResponse> Search(SearchRequest data, string from = null) {
+		public async UniTask<SearchResponse> Search(SearchRequest data, string from = null, CancellationToken cancellationToken = default) {
 			if (Main.Instance.NetworkAPI == null)
 				return null;
 
@@ -66,17 +72,20 @@ namespace Nox.Avatars.Runtime.Network {
 				return null;
 			}
 
-			var request = Main.Instance.NetworkAPI.MakeRequest();
-			await request.SetMasterUrl(address, $"/api/avatars{data.ToParams()}");
-			await request.Send();
-			var response = request.GetMasterResponse<SearchResponse>();
-			Logger.LogDebug(request.GetResponse<string>());
-			if (response.HasError()) {
-				Logger.LogError($"Failed to search avatars from {address}: {response.GetError().GetMessage()}");
+			var request = await RequestNode.To(address, $"/api/avatars{data.ToParams()}");
+			if (request == null) {
+				Logger.LogError($"Failed to create request for avatar search");
 				return null;
 			}
 
-			var avatars = response.GetData();
+			await request.Send(cancellationToken);
+			var response = await request.Node<SearchResponse>(cancellationToken);
+			if (response.HasError()) {
+				Logger.LogError($"Failed to search avatars from {address}: {response.Error.Message}");
+				return null;
+			}
+
+			var avatars = response.Data;
 
 			foreach (var avatar in avatars.avatars)
 				InvokeFetch(avatar);
@@ -84,7 +93,7 @@ namespace Nox.Avatars.Runtime.Network {
 			return avatars;
 		}
 
-		public async UniTask<Avatar> Create(CreateAvatarRequest data, string server) {
+		public async UniTask<Avatar> Create(CreateAvatarRequest data, string server, CancellationToken cancellationToken = default) {
 			if (Main.Instance.NetworkAPI == null)
 				return null;
 
@@ -93,29 +102,33 @@ namespace Nox.Avatars.Runtime.Network {
 				return null;
 			}
 
-			var request = Main.Instance.NetworkAPI.MakeRequest();
-			await request.SetMasterUrl(server, "/api/avatars");
-			request.SetBody(data.ToJson(), "application/json");
-			request.SetMethod("PUT");
-			await request.Send();
-			var response = request.GetMasterResponse<Avatar>();
-			if (response.HasError()) {
-				Logger.LogError($"Failed to create avatar on {server}: {response.GetError().GetMessage()}");
+			var request = await RequestNode.To(server, "/api/avatars");
+			if (request == null) {
+				Logger.LogError($"Failed to create request for avatar creation");
 				return null;
 			}
 
-			var avatar = response.GetData();
+			request.SetBody(data);
+			request.method = RequestExtension.Method.PUT;
+			await request.Send(cancellationToken);
+			var response = await request.Node<Avatar>(cancellationToken);
+			if (response.HasError()) {
+				Logger.LogError($"Failed to create avatar on {server}: {response.Error.Message}");
+				return null;
+			}
+
+			var avatar = response.Data;
 			InvokeFetch(avatar);
 			return avatar;
 		}
 
-		public async UniTask<Avatar> Update(AvatarIdentifier identifier, UpdateAvatarRequest form, string from = null)
-			=> await Update(identifier.ToString(), form, from);
+		public async UniTask<Avatar> Update(AvatarIdentifier identifier, UpdateAvatarRequest form, string from = null, CancellationToken cancellationToken = default)
+			=> await Update(identifier.ToString(), form, from, cancellationToken);
 
-		public async UniTask<Avatar> Update(uint id, UpdateAvatarRequest form, string from = null)
-			=> await Update(id.ToString(), form, from);
+		public async UniTask<Avatar> Update(uint id, UpdateAvatarRequest form, string from = null, CancellationToken cancellationToken = default)
+			=> await Update(id.ToString(), form, from, cancellationToken);
 
-		public async UniTask<Avatar> Update(string identifier, UpdateAvatarRequest form, string from = null) {
+		public async UniTask<Avatar> Update(string identifier, UpdateAvatarRequest form, string from = null, CancellationToken cancellationToken = default) {
 			if (Main.Instance.NetworkAPI == null)
 				return null;
 
@@ -124,36 +137,40 @@ namespace Nox.Avatars.Runtime.Network {
 				ide = new AvatarIdentifier(ide.GetId(), ide.GetMetadata(), from);
 			var address = from ?? Main.Instance.UserAPI?.GetCurrent()?.GetServerAddress() ?? ide.GetServer();
 			if (string.IsNullOrEmpty(address)) {
-				Logger.LogError($"Cannot fetch avatar {identifier}: no server address provided.");
+				Logger.LogError($"Cannot update avatar {identifier}: no server address provided.");
 				return null;
 			}
 
 			if (address == ide.GetServer())
 				ide = new AvatarIdentifier(ide.GetId(), ide.GetMetadata(), AvatarIdentifier.LocalServer);
 
-			var request = Main.Instance.NetworkAPI.MakeRequest();
-			await request.SetMasterUrl(address, $"/api/avatars/{ide.ToString()}");
-			request.SetBody(form.ToJson(), "application/json");
-			request.SetMethod("POST");
-			await request.Send();
-			var response = request.GetMasterResponse<Avatar>();
-			if (response.HasError()) {
-				Logger.LogError($"Failed to update avatar {identifier} from {address}: {response.GetError().GetMessage()}");
+			var request = await RequestNode.To(address, $"/api/avatars/{ide.ToString()}");
+			if (request == null) {
+				Logger.LogError($"Failed to create request for avatar {identifier}");
 				return null;
 			}
 
-			var avatar = response.GetData();
+			request.SetBody(form);
+			request.method = RequestExtension.Method.POST;
+			await request.Send(cancellationToken);
+			var response = await request.Node<Avatar>(cancellationToken);
+			if (response.HasError()) {
+				Logger.LogError($"Failed to update avatar {identifier} from {address}: {response.Error.Message}");
+				return null;
+			}
+
+			var avatar = response.Data;
 			InvokeFetch(avatar);
 			return avatar;
 		}
 
-		public async UniTask<bool> Delete(AvatarIdentifier identifier, string from = null)
-			=> await Delete(identifier.ToString(), from);
+		public async UniTask<bool> Delete(AvatarIdentifier identifier, string from = null, CancellationToken cancellationToken = default)
+			=> await Delete(identifier.ToString(), from, cancellationToken);
 
-		public async UniTask<bool> Delete(uint id, string from = null)
-			=> await Delete(id.ToString(), from);
+		public async UniTask<bool> Delete(uint id, string from = null, CancellationToken cancellationToken = default)
+			=> await Delete(id.ToString(), from, cancellationToken);
 
-		public async UniTask<bool> Delete(string identifier, string from = null) {
+		public async UniTask<bool> Delete(string identifier, string from = null, CancellationToken cancellationToken = default) {
 			if (Main.Instance.NetworkAPI == null)
 				return false;
 
@@ -169,23 +186,28 @@ namespace Nox.Avatars.Runtime.Network {
 			if (address == ide.GetServer())
 				ide = new AvatarIdentifier(ide.GetId(), ide.GetMetadata(), AvatarIdentifier.LocalServer);
 
-			var request = Main.Instance.NetworkAPI.MakeRequest();
-			await request.SetMasterUrl(address, $"/api/avatars/{ide.ToString()}");
-			request.SetMethod("DELETE");
-			await request.Send();
-			var response = request.GetMasterResponse<object>();
-			if (!response.HasError()) return true;
-			Logger.LogError($"Failed to delete avatar {identifier} from {address}: {response.GetError().GetMessage()}");
-			return false;
+			var request = await RequestNode.To(address, $"/api/avatars/{ide.ToString()}");
+			if (request == null) {
+				Logger.LogError($"Failed to create request for avatar {identifier}");
+				return false;
+			}
+
+			request.method = RequestExtension.Method.DELETE;
+			await request.Send(cancellationToken);
+			if (!request.Ok()) {
+				Logger.LogError($"Failed to delete avatar {identifier} from {address}");
+				return false;
+			}
+			return true;
 		}
 
-		public async UniTask<AssetSearchResponse> SearchAssets(AvatarIdentifier identifier, AssetSearchRequest data, string from = null)
-			=> await SearchAssets(identifier.ToString(), data, from);
+		public async UniTask<AssetSearchResponse> SearchAssets(AvatarIdentifier identifier, AssetSearchRequest data, string from = null, CancellationToken cancellationToken = default)
+			=> await SearchAssets(identifier.ToString(), data, from, cancellationToken);
 
-		public async UniTask<AssetSearchResponse> SearchAssets(uint id, AssetSearchRequest data, string from = null)
-			=> await SearchAssets(id.ToString(), data, from);
+		public async UniTask<AssetSearchResponse> SearchAssets(uint id, AssetSearchRequest data, string from = null, CancellationToken cancellationToken = default)
+			=> await SearchAssets(id.ToString(), data, from, cancellationToken);
 
-		public async UniTask<AssetSearchResponse> SearchAssets(string identifier, AssetSearchRequest data, string from = null) {
+		public async UniTask<AssetSearchResponse> SearchAssets(string identifier, AssetSearchRequest data, string from = null, CancellationToken cancellationToken = default) {
 			if (Main.Instance.NetworkAPI == null)
 				return null;
 
@@ -201,22 +223,28 @@ namespace Nox.Avatars.Runtime.Network {
 			if (address == ide.GetServer())
 				ide = new AvatarIdentifier(ide.GetId(), ide.GetMetadata(), AvatarIdentifier.LocalServer);
 
-			var request = Main.Instance.NetworkAPI.MakeRequest();
-			await request.SetMasterUrl(address, $"/api/avatars/{ide.ToString()}/assets{data.ToParams()}");
-			await request.Send();
-			var response = request.GetMasterResponse<AssetSearchResponse>();
-			if (!response.HasError()) return response.GetData();
-			Logger.LogError($"Failed to get assets for avatar {identifier} from {address}: {response.GetError().GetMessage()}");
-			return null;
+			var request = await RequestNode.To(address, $"/api/avatars/{ide.ToString()}/assets{data.ToParams()}");
+			if (request == null) {
+				Logger.LogError($"Failed to create request for avatar {identifier} assets");
+				return null;
+			}
+
+			await request.Send(cancellationToken);
+			var response = await request.Node<AssetSearchResponse>(cancellationToken);
+			if (response.HasError()) {
+				Logger.LogError($"Failed to get assets for avatar {identifier} from {address}: {response.Error.Message}");
+				return null;
+			}
+			return response.Data;
 		}
 
-		public async UniTask<AvatarAsset> CreateAsset(AvatarIdentifier identifier, CreateAssetRequest data, string from = null)
-			=> await CreateAsset(identifier.ToString(), data, from);
+		public async UniTask<AvatarAsset> CreateAsset(AvatarIdentifier identifier, CreateAssetRequest data, string from = null, CancellationToken cancellationToken = default)
+			=> await CreateAsset(identifier.ToString(), data, from, cancellationToken);
 
-		public async UniTask<AvatarAsset> CreateAsset(uint id, CreateAssetRequest data, string from = null)
-			=> await CreateAsset(id.ToString(), data, from);
+		public async UniTask<AvatarAsset> CreateAsset(uint id, CreateAssetRequest data, string from = null, CancellationToken cancellationToken = default)
+			=> await CreateAsset(id.ToString(), data, from, cancellationToken);
 
-		public async UniTask<AvatarAsset> CreateAsset(string identifier, CreateAssetRequest data, string from = null) {
+		public async UniTask<AvatarAsset> CreateAsset(string identifier, CreateAssetRequest data, string from = null, CancellationToken cancellationToken = default) {
 			if (Main.Instance.NetworkAPI == null)
 				return null;
 			var ide = AvatarIdentifier.From(identifier);
@@ -231,27 +259,31 @@ namespace Nox.Avatars.Runtime.Network {
 			if (address == ide.GetServer())
 				ide = new AvatarIdentifier(ide.GetId(), ide.GetMetadata(), AvatarIdentifier.LocalServer);
 
-			var request = Main.Instance.NetworkAPI.MakeRequest();
-			await request.SetMasterUrl(address, $"/api/avatars/{ide.ToString()}/assets");
-			request.SetBody(data.ToJson(), "application/json");
-			request.SetMethod("PUT");
-			await request.Send();
-			var response = request.GetMasterResponse<AvatarAsset>();
-			if (response.HasError()) {
-				Logger.LogError($"Failed to create asset for avatar {identifier} on {address}: {response.GetError().GetMessage()}");
+			var request = await RequestNode.To(address, $"/api/avatars/{ide.ToString()}/assets");
+			if (request == null) {
+				Logger.LogError($"Failed to create request for avatar {identifier}");
 				return null;
 			}
 
-			return response.GetData();
+			request.SetBody(data);
+			request.method = RequestExtension.Method.PUT;
+			await request.Send(cancellationToken);
+			var response = await request.Node<AvatarAsset>(cancellationToken);
+			if (response.HasError()) {
+				Logger.LogError($"Failed to create asset for avatar {identifier} on {address}: {response.Error.Message}");
+				return null;
+			}
+
+			return response.Data;
 		}
 
-		public async UniTask<bool> UploadThumbnail(AvatarIdentifier identifier, Texture2D texture, string from = null, System.Action<float> onProgress = null)
-			=> await UploadThumbnail(identifier.ToString(), texture, from, onProgress);
+		public async UniTask<bool> UploadThumbnail(AvatarIdentifier identifier, Texture2D texture, string from = null, System.Action<float> onProgress = null, CancellationToken cancellationToken = default)
+			=> await UploadThumbnail(identifier.ToString(), texture, from, onProgress, cancellationToken);
 
-		public async UniTask<bool> UploadThumbnail(uint id, Texture2D texture, string from = null, System.Action<float> onProgress = null)
-			=> await UploadThumbnail(id.ToString(), texture, from, onProgress);
+		public async UniTask<bool> UploadThumbnail(uint id, Texture2D texture, string from = null, System.Action<float> onProgress = null, CancellationToken cancellationToken = default)
+			=> await UploadThumbnail(id.ToString(), texture, from, onProgress, cancellationToken);
 
-		public async UniTask<bool> UploadThumbnail(string identifier, Texture2D texture, string from = null, System.Action<float> onProgress = null) {
+		public async UniTask<bool> UploadThumbnail(string identifier, Texture2D texture, string from = null, System.Action<float> onProgress = null, CancellationToken cancellationToken = default) {
 			if (Main.Instance.NetworkAPI == null)
 				return false;
 
@@ -310,113 +342,150 @@ namespace Nox.Avatars.Runtime.Network {
 			System.Array.Copy(imageData, 0, bodyData, headerBytes.Length, imageData.Length);
 			System.Array.Copy(footerBytes, 0, bodyData, headerBytes.Length + imageData.Length, footerBytes.Length);
 
-			var request = Main.Instance.NetworkAPI.MakeRequest();
-			await request.SetMasterUrl(address, $"/api/avatars/{ide.ToString()}/thumbnail");
-			request.SetMethod("POST");
+			var request = await RequestNode.To(address, $"/api/avatars/{ide.ToString()}/thumbnail");
+			if (request == null) {
+				Logger.LogError($"Failed to create request for avatar {identifier}");
+				return false;
+			}
+
+			request.method = RequestExtension.Method.POST;
 			request.SetBody(bodyData, $"multipart/form-data; boundary={boundary}");
 
 			if (!string.IsNullOrEmpty(fileHash))
-				request.SetHeader("x-file-hash", fileHash);
+				request.SetRequestHeader("x-file-hash", fileHash);
 
 			// Send request with progress monitoring if callback provided
 			if (onProgress != null) {
-				var sendTask = request.Send();
-				while (!sendTask.GetAwaiter().IsCompleted) {
-					onProgress?.Invoke(request.GetUploadProgress());
-					await UniTask.Yield();
-				}
-
-				await sendTask;           // Ensure the task completes
-				onProgress?.Invoke(1.0f); // Ensure final progress is reported
-			} else {
-				await request.Send();
+				request.HandleUploadProgress((progress, _) => onProgress?.Invoke(progress), cancellationToken);
 			}
 
-			if (request.GetStatus() != 200) {
-				Logger.LogError($"Failed to upload thumbnail for avatar {identifier} on {address}: {request.GetResponse<string>()}");
+			await request.Send(cancellationToken);
+
+			if (!request.Ok()) {
+				Logger.LogError($"Failed to upload thumbnail for avatar {identifier} on {address}");
 				return false;
 			}
 
 			return true;
 		}
 
-		public async UniTask<bool> UploadAssetFile(AvatarIdentifier identifier, uint assetId, byte[] fileData, string fileName, string fileHash = null, string from = null, System.Action<float> onProgress = null)
-			=> await UploadAssetFile(identifier.ToString(), assetId, fileData, fileName, fileHash, from, onProgress);
+		public async UniTask<UploadAssetResponse> UploadAssetFile(AvatarIdentifier identifier, uint assetId, byte[] fileData, string fileHash = null, string from = null, System.Action<float> onProgress = null, CancellationToken cancellationToken = default)
+			=> await UploadAssetFile(identifier.ToString(), assetId, fileData, fileHash, from, onProgress, cancellationToken);
 
-		public async UniTask<bool> UploadAssetFile(uint id, uint assetId, byte[] fileData, string fileName, string fileHash = null, string from = null, System.Action<float> onProgress = null)
-			=> await UploadAssetFile(id.ToString(), assetId, fileData, fileName, fileHash, from, onProgress);
+		public async UniTask<UploadAssetResponse> UploadAssetFile(uint id, uint assetId, byte[] fileData, string fileHash = null, string from = null, System.Action<float> onProgress = null, CancellationToken cancellationToken = default)
+			=> await UploadAssetFile(id.ToString(), assetId, fileData, fileHash, from, onProgress, cancellationToken);
 
-		public async UniTask<bool> UploadAssetFile(string identifier, uint assetId, byte[] fileData, string fileName, string fileHash = null, string from = null, System.Action<float> onProgress = null) {
+		public async UniTask<UploadAssetResponse> UploadAssetFile(string identifier, uint assetId, byte[] fileData, string fileHash = null, string from = null, System.Action<float> onProgress = null, CancellationToken cancellationToken = default) {
 			if (Main.Instance.NetworkAPI == null)
-				return false;
+				return null;
 			var ide = AvatarIdentifier.From(identifier);
 			if (ide.IsLocal())
 				ide = new AvatarIdentifier(ide.GetId(), ide.GetMetadata(), from);
 			var address = from ?? Main.Instance.UserAPI?.GetCurrent()?.GetServerAddress() ?? ide.GetServer();
 			if (string.IsNullOrEmpty(address)) {
 				Logger.LogError($"Cannot upload asset file for avatar {identifier}: no server address provided.");
-				return false;
+				return null;
 			}
 
 			if (address == ide.GetServer())
 				ide = new AvatarIdentifier(ide.GetId(), ide.GetMetadata(), AvatarIdentifier.LocalServer);
 
-			// Create multipart form data manually (same pattern as UploadThumbnail)
-			var boundary = "----formdata-nox-" + Guid.NewGuid();
-			var formData = $"--{boundary}\r\n";
-			formData += $"Content-Disposition: form-data; name=\"file\"; filename=\"{fileName}\"\r\n";
-			formData += "Content-Type: application/octet-stream\r\n\r\n";
+			// Utiliser WWWForm pour une génération de multipart plus fiable
+			var form = new WWWForm();
+			form.AddBinaryData("file", fileData, "avatar.nox", "application/octet-stream");
 
-			// Combine header, file data, and footer
-			var headerBytes = System.Text.Encoding.UTF8.GetBytes(formData);
-			var footerBytes = System.Text.Encoding.UTF8.GetBytes($"\r\n--{boundary}--\r\n");
-
-			var bodyData = new byte[headerBytes.Length + fileData.Length + footerBytes.Length];
-			Array.Copy(headerBytes, 0, bodyData, 0, headerBytes.Length);
-			Array.Copy(fileData, 0, bodyData, headerBytes.Length, fileData.Length);
-			Array.Copy(footerBytes, 0, bodyData, headerBytes.Length + fileData.Length, footerBytes.Length);
-
-			var request = Main.Instance.NetworkAPI.MakeRequest();
-			await request.SetMasterUrl(address, $"/api/avatars/{ide.ToString()}/assets/{assetId}/file");
-			request.SetMethod("POST");
-			request.SetBody(bodyData, $"multipart/form-data; boundary={boundary}");
-			// request.SetHeader("Content-Length", bodyData.Length.ToString());
-			if (!string.IsNullOrEmpty(fileHash))
-				request.SetHeader("x-file-hash", fileHash);
-
-			// Send request with progress monitoring if callback provided
-			if (onProgress != null) {
-				onProgress.Invoke(0.0f); // Initialize progress to 0
-				var sendTask = request.Send();
-				while (!sendTask.GetAwaiter().IsCompleted) {
-					onProgress.Invoke(request.GetUploadProgress());
-					await UniTask.Yield();
-				}
-
-				await sendTask;          // Ensure the task completes
-				onProgress.Invoke(1.0f); // Ensure final progress is reported
-			} else await request.Send();
-
-			if (request.GetStatus() != 200) {
-				Logger.LogError($"Failed to upload asset file for avatar {identifier} on {address}: {request.GetResponse<string>()}");
-				return false;
+			var request = await RequestNode.To(address, $"/api/avatars/{ide.ToString()}/assets/{assetId}/file");
+			if (request == null) {
+				Logger.LogError($"Failed to create request for avatar {identifier}");
+				return null;
 			}
 
-			return true;
+			request.method = RequestExtension.Method.POST;
+			request.SetBody(form);
+
+			if (!string.IsNullOrEmpty(fileHash))
+				request.SetRequestHeader("X-File-Hash", fileHash);
+
+			request.HandleUploadProgress((f, _) => Logger.LogDebug($"Uploading asset file for avatar {identifier}: {f * 100f:0.00}%"), cancellationToken);
+			request.HandleDownloadProgress((f, _) => Logger.LogDebug($"Waiting for server response for avatar {identifier}: {f * 100f:0.00}%"), cancellationToken);
+
+			if (onProgress != null)
+				request.HandleUploadProgress((progress, _) => onProgress?.Invoke(progress), cancellationToken);
+
+			if (!await request.Send(cancellationToken)) {
+				Logger.LogError($"Failed during sending request to upload asset file for avatar {identifier} on {address}");
+				return null;
+			}
+			if (request.responseCode != 202) {
+				Logger.LogError($"Status code {request.responseCode} received when uploading asset file for avatar {identifier} on {address}, expected 202 Accepted.");
+				return null;
+			}
+
+			var response = await request.Node<UploadAssetResponse>(cancellationToken);
+			if (response.HasError()) {
+				Logger.LogError($"Failed to upload asset file for avatar {identifier} on {address}: {response.Error.Message}");
+				return null;
+			}
+
+			return response.Data;
 		}
 
-		public async UniTask<string> DownloadAssetFile(AvatarIdentifier identifier, uint assetId, string hash = null, string from = null, Action<float> onProgress = null)
-			=> await DownloadAssetFile(identifier.ToString(), assetId, hash, from, onProgress);
+		public async UniTask<AssetStatusResponse> GetAssetStatus(AvatarIdentifier identifier, uint assetId, string from = null, CancellationToken cancellationToken = default)
+			=> await GetAssetStatus(identifier.ToString(), assetId, from, cancellationToken);
 
-		public async UniTask<string> DownloadAssetFile(uint id, uint assetId, string hash = null, string from = null, Action<float> onProgress = null)
-			=> await DownloadAssetFile(id.ToString(), assetId, hash, from, onProgress);
+		public async UniTask<AssetStatusResponse> GetAssetStatus(uint id, uint assetId, string from = null, CancellationToken cancellationToken = default)
+			=> await GetAssetStatus(id.ToString(), assetId, from, cancellationToken);
 
-		public async UniTask<string> DownloadAssetFile(string identifier, uint assetId, string hash = null, string from = null, Action<float> onProgress = null) {
+		public async UniTask<AssetStatusResponse> GetAssetStatus(string identifier, uint assetId, string from = null, CancellationToken cancellationToken = default) {
+			if (Main.Instance.NetworkAPI == null)
+				return null;
+
+			var ide = AvatarIdentifier.From(identifier);
+			if (ide.IsLocal())
+				ide = new AvatarIdentifier(ide.GetId(), ide.GetMetadata(), from);
+			var address = from ?? Main.Instance.UserAPI?.GetCurrent()?.GetServerAddress() ?? ide.GetServer();
+			if (string.IsNullOrEmpty(address)) {
+				Logger.LogError($"Cannot get asset status for avatar {identifier}: no server address provided.");
+				return null;
+			}
+
+			if (address == ide.GetServer())
+				ide = new AvatarIdentifier(ide.GetId(), ide.GetMetadata(), AvatarIdentifier.LocalServer);
+
+			var request = await RequestNode.To(address, $"/api/avatars/{ide.ToString()}/assets/{assetId}/status");
+			if (request == null) {
+				Logger.LogError($"Failed to create request for avatar {identifier}");
+				return null;
+			}
+
+			await request.Send(cancellationToken);
+
+			if (!request.Ok()) {
+				Logger.LogError($"Failed to get asset status for avatar {identifier} on {address}");
+				return null;
+			}
+
+			var response = await request.Node<AssetStatusResponse>(cancellationToken);
+			if (response.HasError()) {
+				Logger.LogError($"Failed to get asset status for avatar {identifier} on {address}: {response.Error.Message}");
+				return null;
+			}
+
+			return response.Data;
+		}
+
+		public async UniTask<string> DownloadAssetFile(AvatarIdentifier identifier, uint assetId, string hash = null, string from = null, Action<float> onProgress = null, CancellationToken cancellationToken = default)
+			=> await DownloadAssetFile(identifier.ToString(), assetId, hash, from, onProgress, cancellationToken);
+
+		public async UniTask<string> DownloadAssetFile(uint id, uint assetId, string hash = null, string from = null, Action<float> onProgress = null, CancellationToken cancellationToken = default)
+			=> await DownloadAssetFile(id.ToString(), assetId, hash, from, onProgress, cancellationToken);
+
+		public async UniTask<string> DownloadAssetFile(string identifier, uint assetId, string hash = null, string from = null, Action<float> onProgress = null, CancellationToken cancellationToken = default) {
 			if (Main.Instance.NetworkAPI == null)
 				return null;
 
 			var output = Path.Join(Application.temporaryCachePath, string.IsNullOrEmpty(hash) ? $"{identifier}_{assetId}" : hash);
-			var ide    = AvatarIdentifier.From(identifier);
+			var ide = AvatarIdentifier.From(identifier);
 
 			if (ide.IsLocal())
 				ide = new AvatarIdentifier(ide.GetId(), ide.GetMetadata(), from);
@@ -430,29 +499,24 @@ namespace Nox.Avatars.Runtime.Network {
 			if (address == ide.GetServer())
 				ide = new AvatarIdentifier(ide.GetId(), ide.GetMetadata(), AvatarIdentifier.LocalServer);
 
-			var request = Main.Instance.NetworkAPI.MakeRequest();
-			await request.SetMasterUrl(address, $"/api/avatars/{ide.ToString()}/assets/{assetId}/file");
+			var request = await RequestNode.To(address, $"/api/avatars/{ide.ToString()}/assets/{assetId}/file");
+			if (request == null) {
+				Logger.LogError($"Failed to create request for avatar {identifier}");
+				return null;
+			}
+
 			var downloadHandler = new DownloadHandlerFile(output) { removeFileOnAbort = true };
-			request.SetDownloadHandler(downloadHandler); // Use DownloadHandlerFile to save directly to file
-			request.SetCacheDuration(0);                 // Disable caching because is not compatible with DownloadHandlerFile
+			request.downloadHandler = downloadHandler; // Use DownloadHandlerFile to save directly to file
 
 			// Send request with progress monitoring if callback provided
 			if (onProgress != null) {
-				onProgress.Invoke(0.0f); // Initialize progress at 0
-				var sendTask = request.Send();
-				while (!sendTask.GetAwaiter().IsCompleted) {
-					onProgress.Invoke(request.GetDownloadProgress());
-					await UniTask.Yield();
-				}
-
-				await sendTask;          // Ensure the task completes
-				onProgress.Invoke(1.0f); // Ensure final progress is reported
-			} else {
-				await request.Send();
+				request.HandleDownloadProgress((progress, _) => onProgress?.Invoke(progress), cancellationToken);
 			}
 
-			if (request.GetStatus() != 200) {
-				Logger.LogError($"Failed to download asset file for avatar {identifier} from {address}: {request.GetResponse<string>()}");
+			await request.Send(cancellationToken);
+
+			if (!request.Ok()) {
+				Logger.LogError($"Failed to download asset file for avatar {identifier} from {address}");
 				return null;
 			}
 
