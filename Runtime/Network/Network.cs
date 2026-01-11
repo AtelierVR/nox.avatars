@@ -401,17 +401,18 @@ namespace Nox.Avatars.Runtime.Network {
 			}
 
 			request.method = RequestExtension.Method.POST;
-			request.SetBody(form);
 
 			if (!string.IsNullOrEmpty(fileHash))
 				request.SetRequestHeader("X-File-Hash", fileHash);
 
-			request.HandleUploadProgress((f, _) => Logger.LogDebug($"Uploading asset file for avatar {identifier}: {f * 100f:0.00}%"), cancellationToken);
-			request.HandleDownloadProgress((f, _) => Logger.LogDebug($"Waiting for server response for avatar {identifier}: {f * 100f:0.00}%"), cancellationToken);
+			request.HandleUploadProgress((f, b) => Logger.LogDebug($"Uploading asset file for avatar {identifier}: {f * 100f:0.00}% - {b} bytes"), cancellationToken);
+			request.HandleDownloadProgress((f, b) => Logger.LogDebug($"Waiting for server response for avatar {identifier}: {f * 100f:0.00}% - {b} bytes"), cancellationToken);
 
 			if (onProgress != null)
 				request.HandleUploadProgress((progress, _) => onProgress?.Invoke(progress), cancellationToken);
 
+			request.SetBody(form);
+			
 			if (!await request.Send(cancellationToken)) {
 				Logger.LogError($"Failed during sending request to upload asset file for avatar {identifier} on {address}");
 				return null;
