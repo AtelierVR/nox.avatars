@@ -1,20 +1,8 @@
-using System;
-using Nox.Avatars;
+using Newtonsoft.Json;
 
 namespace Nox.Avatars.Runtime.Network {
-	[Serializable]
-	public class UploadAssetResponse : IUploadAssetResponse {
-		public bool   success;
-		public string message;
-		public string status;
-		public int    progress;
-		public int    queue_position;
-
-		public bool Success => success;
-		public string Message => message;
-		public string Status => status;
-		public int Progress => progress;
-		public int QueuePosition => queue_position;
+	public class UploadAssetResponse : AssetStatusResponse, IUploadAssetResponse {
+		[JsonProperty("success")]
+		public bool Success { get; }
 	}
 }
-

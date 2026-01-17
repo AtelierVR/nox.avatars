@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -28,9 +29,6 @@ namespace Nox.Avatars.Runtime.Network {
 			=> Fetch(id.ToString(), from, cancellationToken);
 
 		public async UniTask<Avatar> Fetch(string identifier, string from = null, CancellationToken cancellationToken = default) {
-			if (Main.Instance.NetworkAPI == null)
-				return null;
-
 			var ide = AvatarIdentifier.From(identifier);
 			if (ide.IsLocal())
 				ide = new AvatarIdentifier(ide.GetId(), ide.GetMetadata(), from);
@@ -63,9 +61,6 @@ namespace Nox.Avatars.Runtime.Network {
 		}
 
 		public async UniTask<SearchResponse> Search(SearchRequest data, string from = null, CancellationToken cancellationToken = default) {
-			if (Main.Instance.NetworkAPI == null)
-				return null;
-
 			var address = from ?? Main.Instance.UserAPI?.GetCurrent()?.GetServerAddress();
 			if (string.IsNullOrEmpty(address)) {
 				Logger.LogError("Cannot search avatars: no server address provided.");
@@ -94,9 +89,6 @@ namespace Nox.Avatars.Runtime.Network {
 		}
 
 		public async UniTask<Avatar> Create(CreateAvatarRequest data, string server, CancellationToken cancellationToken = default) {
-			if (Main.Instance.NetworkAPI == null)
-				return null;
-
 			if (string.IsNullOrEmpty(server)) {
 				Logger.LogError("Cannot create avatar: no server address provided.");
 				return null;
@@ -108,7 +100,7 @@ namespace Nox.Avatars.Runtime.Network {
 				return null;
 			}
 
-			request.SetBody(data);
+			request.SetBody(data.ToJson(), "application/json");
 			request.method = RequestExtension.Method.PUT;
 			await request.Send(cancellationToken);
 			var response = await request.Node<Avatar>(cancellationToken);
@@ -129,9 +121,6 @@ namespace Nox.Avatars.Runtime.Network {
 			=> await Update(id.ToString(), form, from, cancellationToken);
 
 		public async UniTask<Avatar> Update(string identifier, UpdateAvatarRequest form, string from = null, CancellationToken cancellationToken = default) {
-			if (Main.Instance.NetworkAPI == null)
-				return null;
-
 			var ide = AvatarIdentifier.From(identifier);
 			if (ide.IsLocal())
 				ide = new AvatarIdentifier(ide.GetId(), ide.GetMetadata(), from);
@@ -150,7 +139,7 @@ namespace Nox.Avatars.Runtime.Network {
 				return null;
 			}
 
-			request.SetBody(form);
+			request.SetBody(form.ToJson(), "application/json");
 			request.method = RequestExtension.Method.POST;
 			await request.Send(cancellationToken);
 			var response = await request.Node<Avatar>(cancellationToken);
@@ -208,9 +197,6 @@ namespace Nox.Avatars.Runtime.Network {
 			=> await SearchAssets(id.ToString(), data, from, cancellationToken);
 
 		public async UniTask<AssetSearchResponse> SearchAssets(string identifier, AssetSearchRequest data, string from = null, CancellationToken cancellationToken = default) {
-			if (Main.Instance.NetworkAPI == null)
-				return null;
-
 			var ide = AvatarIdentifier.From(identifier);
 			if (ide.IsLocal())
 				ide = new AvatarIdentifier(ide.GetId(), ide.GetMetadata(), from);
@@ -245,8 +231,6 @@ namespace Nox.Avatars.Runtime.Network {
 			=> await CreateAsset(id.ToString(), data, from, cancellationToken);
 
 		public async UniTask<AvatarAsset> CreateAsset(string identifier, CreateAssetRequest data, string from = null, CancellationToken cancellationToken = default) {
-			if (Main.Instance.NetworkAPI == null)
-				return null;
 			var ide = AvatarIdentifier.From(identifier);
 			if (ide.IsLocal())
 				ide = new AvatarIdentifier(ide.GetId(), ide.GetMetadata(), from);
@@ -265,7 +249,7 @@ namespace Nox.Avatars.Runtime.Network {
 				return null;
 			}
 
-			request.SetBody(data);
+			request.SetBody(data.ToJson(), "application/json");
 			request.method = RequestExtension.Method.PUT;
 			await request.Send(cancellationToken);
 			var response = await request.Node<AvatarAsset>(cancellationToken);
@@ -284,10 +268,7 @@ namespace Nox.Avatars.Runtime.Network {
 			=> await UploadThumbnail(id.ToString(), texture, from, onProgress, cancellationToken);
 
 		public async UniTask<bool> UploadThumbnail(string identifier, Texture2D texture, string from = null, System.Action<float> onProgress = null, CancellationToken cancellationToken = default) {
-			if (Main.Instance.NetworkAPI == null)
-				return false;
-
-			if (texture == null) {
+			if (!texture) {
 				Logger.LogError($"Cannot upload thumbnail for avatar {identifier}: texture is null.");
 				return false;
 			}
@@ -295,10 +276,9 @@ namespace Nox.Avatars.Runtime.Network {
 			var ide = AvatarIdentifier.From(identifier);
 			if (ide.IsLocal())
 				ide = new AvatarIdentifier(ide.GetId(), ide.GetMetadata(), from);
-
 			var address = from ?? Main.Instance.UserAPI?.GetCurrent()?.GetServerAddress() ?? ide.GetServer();
 			if (string.IsNullOrEmpty(address)) {
-				Logger.LogError($"Cannot upload thumbnail for avatar {identifier}: no server address provided.");
+				Logger.LogError($"Cannot upload asset file for avatar {identifier}: no server address provided.");
 				return false;
 			}
 
@@ -307,7 +287,7 @@ namespace Nox.Avatars.Runtime.Network {
 
 			// Convert texture to PNG byte array
 			byte[] imageData;
-			string fileHash = null;
+			string fileHash;
 
 			try {
 				imageData = texture.EncodeToPNG();
@@ -317,30 +297,11 @@ namespace Nox.Avatars.Runtime.Network {
 					return false;
 				}
 
-				// Calculate hash for validation
-				using (var sha256 = System.Security.Cryptography.SHA256.Create()) {
-					var hashBytes = sha256.ComputeHash(imageData);
-					fileHash = System.BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
-				}
-			} catch (System.Exception ex) {
+				fileHash = Hashing.HashBytes(imageData);
+			} catch (Exception ex) {
 				Logger.LogError($"Failed to encode texture for avatar {identifier}: {ex.Message}");
 				return false;
 			}
-
-			// Create multipart form data manually
-			var boundary = "----formdata-nox-" + Guid.NewGuid();
-			var formData = $"--{boundary}\r\n";
-			formData += "Content-Disposition: form-data; name=\"file\"; filename=\"thumbnail.png\"\r\n";
-			formData += "Content-Type: image/png\r\n\r\n";
-
-			// Combine header, image data, and footer
-			var headerBytes = System.Text.Encoding.UTF8.GetBytes(formData);
-			var footerBytes = System.Text.Encoding.UTF8.GetBytes($"\r\n--{boundary}--\r\n");
-
-			var bodyData = new byte[headerBytes.Length + imageData.Length + footerBytes.Length];
-			System.Array.Copy(headerBytes, 0, bodyData, 0, headerBytes.Length);
-			System.Array.Copy(imageData, 0, bodyData, headerBytes.Length, imageData.Length);
-			System.Array.Copy(footerBytes, 0, bodyData, headerBytes.Length + imageData.Length, footerBytes.Length);
 
 			var request = await RequestNode.To(address, $"/api/avatars/{ide.ToString()}/thumbnail");
 			if (request == null) {
@@ -349,17 +310,26 @@ namespace Nox.Avatars.Runtime.Network {
 			}
 
 			request.method = RequestExtension.Method.POST;
-			request.SetBody(bodyData, $"multipart/form-data; boundary={boundary}");
+			request.SetBody(new List<IMultipartFormSection>() {
+				new MultipartFormFileSection(
+					"file",
+					imageData,
+					"thumbnail.png",
+					"image/png"
+				)
+			});
 
 			if (!string.IsNullOrEmpty(fileHash))
 				request.SetRequestHeader("x-file-hash", fileHash);
 
 			// Send request with progress monitoring if callback provided
-			if (onProgress != null) {
-				request.HandleUploadProgress((progress, _) => onProgress?.Invoke(progress), cancellationToken);
-			}
+			if (onProgress != null)
+				request.HandleUploadProgress((progress, _) => onProgress.Invoke(progress), cancellationToken);
 
-			await request.Send(cancellationToken);
+			if (!await request.Send(cancellationToken)) {
+				Logger.LogError($"Failed during sending request to upload thumbnail for avatar {identifier} on {address}");
+				return false;
+			}
 
 			if (!request.Ok()) {
 				Logger.LogError($"Failed to upload thumbnail for avatar {identifier} on {address}");
@@ -369,15 +339,13 @@ namespace Nox.Avatars.Runtime.Network {
 			return true;
 		}
 
-		public async UniTask<UploadAssetResponse> UploadAssetFile(AvatarIdentifier identifier, uint assetId, byte[] fileData, string fileHash = null, string from = null, System.Action<float> onProgress = null, CancellationToken cancellationToken = default)
-			=> await UploadAssetFile(identifier.ToString(), assetId, fileData, fileHash, from, onProgress, cancellationToken);
+		public async UniTask<UploadAssetResponse> UploadAssetFile(AvatarIdentifier identifier, uint assetId, string filePath, string fileHash = null, string from = null, System.Action<float> onProgress = null, CancellationToken cancellationToken = default)
+			=> await UploadAssetFile(identifier.ToString(), assetId, filePath, fileHash, from, onProgress, cancellationToken);
 
-		public async UniTask<UploadAssetResponse> UploadAssetFile(uint id, uint assetId, byte[] fileData, string fileHash = null, string from = null, System.Action<float> onProgress = null, CancellationToken cancellationToken = default)
-			=> await UploadAssetFile(id.ToString(), assetId, fileData, fileHash, from, onProgress, cancellationToken);
+		public async UniTask<UploadAssetResponse> UploadAssetFile(uint id, uint assetId, string filePath, string fileHash = null, string from = null, System.Action<float> onProgress = null, CancellationToken cancellationToken = default)
+			=> await UploadAssetFile(id.ToString(), assetId, filePath, fileHash, from, onProgress, cancellationToken);
 
-		public async UniTask<UploadAssetResponse> UploadAssetFile(string identifier, uint assetId, byte[] fileData, string fileHash = null, string from = null, System.Action<float> onProgress = null, CancellationToken cancellationToken = default) {
-			if (Main.Instance.NetworkAPI == null)
-				return null;
+		public async UniTask<UploadAssetResponse> UploadAssetFile(string identifier, uint assetId, string filePath, string fileHash = null, string from = null, System.Action<float> onProgress = null, CancellationToken cancellationToken = default) {
 			var ide = AvatarIdentifier.From(identifier);
 			if (ide.IsLocal())
 				ide = new AvatarIdentifier(ide.GetId(), ide.GetMetadata(), from);
@@ -390,10 +358,6 @@ namespace Nox.Avatars.Runtime.Network {
 			if (address == ide.GetServer())
 				ide = new AvatarIdentifier(ide.GetId(), ide.GetMetadata(), AvatarIdentifier.LocalServer);
 
-			// Utiliser WWWForm pour une génération de multipart plus fiable
-			var form = new WWWForm();
-			form.AddBinaryData("file", fileData, "avatar.nox", "application/octet-stream");
-
 			var request = await RequestNode.To(address, $"/api/avatars/{ide.ToString()}/assets/{assetId}/file");
 			if (request == null) {
 				Logger.LogError($"Failed to create request for avatar {identifier}");
@@ -401,22 +365,27 @@ namespace Nox.Avatars.Runtime.Network {
 			}
 
 			request.method = RequestExtension.Method.POST;
-
-			if (!string.IsNullOrEmpty(fileHash))
-				request.SetRequestHeader("X-File-Hash", fileHash);
-
-			request.HandleUploadProgress((f, b) => Logger.LogDebug($"Uploading asset file for avatar {identifier}: {f * 100f:0.00}% - {b} bytes"), cancellationToken);
-			request.HandleDownloadProgress((f, b) => Logger.LogDebug($"Waiting for server response for avatar {identifier}: {f * 100f:0.00}% - {b} bytes"), cancellationToken);
-
 			if (onProgress != null)
 				request.HandleUploadProgress((progress, _) => onProgress?.Invoke(progress), cancellationToken);
 
-			request.SetBody(form);
-			
+			request.SetBody(new List<IMultipartFormSection>() {
+				new MultipartFormFileSection(
+					"file",
+					await File.ReadAllBytesAsync(filePath, cancellationToken),
+					Path.GetFileName(filePath),
+					"application/octet-stream"
+				)
+			});
+
+			request.SetRequestHeader("Connection", "keep-alive");
+			if (!string.IsNullOrEmpty(fileHash))
+				request.SetRequestHeader("X-File-Hash", fileHash);
+
 			if (!await request.Send(cancellationToken)) {
 				Logger.LogError($"Failed during sending request to upload asset file for avatar {identifier} on {address}");
 				return null;
 			}
+
 			if (request.responseCode != 202) {
 				Logger.LogError($"Status code {request.responseCode} received when uploading asset file for avatar {identifier} on {address}, expected 202 Accepted.");
 				return null;
@@ -438,9 +407,6 @@ namespace Nox.Avatars.Runtime.Network {
 			=> await GetAssetStatus(id.ToString(), assetId, from, cancellationToken);
 
 		public async UniTask<AssetStatusResponse> GetAssetStatus(string identifier, uint assetId, string from = null, CancellationToken cancellationToken = default) {
-			if (Main.Instance.NetworkAPI == null)
-				return null;
-
 			var ide = AvatarIdentifier.From(identifier);
 			if (ide.IsLocal())
 				ide = new AvatarIdentifier(ide.GetId(), ide.GetMetadata(), from);
@@ -482,9 +448,6 @@ namespace Nox.Avatars.Runtime.Network {
 			=> await DownloadAssetFile(id.ToString(), assetId, hash, from, onProgress, cancellationToken);
 
 		public async UniTask<string> DownloadAssetFile(string identifier, uint assetId, string hash = null, string from = null, Action<float> onProgress = null, CancellationToken cancellationToken = default) {
-			if (Main.Instance.NetworkAPI == null)
-				return null;
-
 			var output = Path.Join(Application.temporaryCachePath, string.IsNullOrEmpty(hash) ? $"{identifier}_{assetId}" : hash);
 			var ide = AvatarIdentifier.From(identifier);
 
@@ -506,13 +469,12 @@ namespace Nox.Avatars.Runtime.Network {
 				return null;
 			}
 
-			var downloadHandler = new DownloadHandlerFile(output) { removeFileOnAbort = true };
-			request.downloadHandler = downloadHandler; // Use DownloadHandlerFile to save directly to file
+			// Use DownloadHandlerFile to save directly to file
+			request.downloadHandler = new DownloadHandlerFile(output) { removeFileOnAbort = true };
 
 			// Send request with progress monitoring if callback provided
-			if (onProgress != null) {
-				request.HandleDownloadProgress((progress, _) => onProgress?.Invoke(progress), cancellationToken);
-			}
+			if (onProgress != null)
+				request.HandleDownloadProgress((progress, _) => onProgress.Invoke(progress), cancellationToken);
 
 			await request.Send(cancellationToken);
 

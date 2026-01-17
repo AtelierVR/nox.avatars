@@ -1,26 +1,65 @@
 using System;
+using Newtonsoft.Json;
 using Nox.Avatars;
 
 namespace Nox.Avatars.Runtime.Network {
-	[Serializable]
 	public class AssetStatusResponse : IAssetStatusResponse {
-		public uint   asset_id;
-		public string status;
-		public int    progress;
-		public int    queue_position;
-		public string started_at;
-		public string error;
-		public string hash;
-		public long   size;
+		[JsonProperty("status")]
+		public string InitStatus;
 
-		public uint AssetId => asset_id;
-		public string Status => status;
-		public int Progress => progress;
-		public int QueuePosition => queue_position;
-		public string StartedAt => started_at;
-		public string Error => error;
-		public string Hash => hash;
-		public long Size => size;
+		public AssetStatusType Status
+			=> AssetStatusTypeExtensions.FromString(InitStatus);
+
+		[JsonProperty("progress")]
+		public uint Progress { get; }
+
+		[JsonProperty("queue_position")]
+		public uint QueuePosition { get; }
+
+		[JsonProperty("message")]
+		public string Message { get; }
+
+		[JsonProperty("hash")]
+		public string Hash { get; }
+
+		[JsonProperty("size")]
+		public long Size { get; }
+
+		[JsonProperty("error")]
+		public string Error { get; }
+
+		[JsonProperty("created_at")]
+		public long? InitCreatedAt;
+
+		[JsonProperty("started_at")]
+		public long? InitStartedAt;
+
+		[JsonProperty("completed_at")]
+		public long? InitCompletedAt;
+
+		public DateTime CreatedAt
+			=> InitCreatedAt is >= -62135596800 and <= 253402300799
+				? DateTimeOffset.FromUnixTimeSeconds(InitCreatedAt.Value).UtcDateTime
+				: default;
+
+		public DateTime StartedAt
+			=> InitStartedAt is > 0 and <= 253402300799
+				? DateTimeOffset.FromUnixTimeSeconds(InitStartedAt.Value).UtcDateTime
+				: default;
+
+		public DateTime CompletedAt
+			=> InitCompletedAt is > 0 and <= 253402300799
+				? DateTimeOffset.FromUnixTimeSeconds(InitCompletedAt.Value).UtcDateTime
+				: default;
+
+		[JsonProperty("next_at")]
+		public long? InitNextTryAt;
+
+		public DateTime NextTryAt
+			=> InitNextTryAt is > 0 and <= 253402300799
+				? DateTimeOffset.FromUnixTimeSeconds(InitNextTryAt.Value).UtcDateTime
+				: default;
+
+
 	}
 }
-

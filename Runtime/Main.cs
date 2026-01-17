@@ -165,8 +165,8 @@ namespace Nox.Avatars.Runtime
         public async UniTask<bool> UploadThumbnail(string identifier, Texture2D texture, string from = null, Action<float> onProgress = null)
             => await Network.UploadThumbnail(identifier, texture, from, onProgress);
 
-        public async UniTask<IUploadAssetResponse> UploadAssetFile(string identifier, uint assetId, byte[] fileData, string fileHash = null, string from = null, Action<float> onProgress = null)
-            => await Network.UploadAssetFile(identifier, assetId, fileData, fileHash, from, onProgress);
+        public async UniTask<IUploadAssetResponse> UploadAssetFile(string identifier, uint assetId, string filePath, string fileHash = null, string from = null, Action<float> onProgress = null)
+            => await Network.UploadAssetFile(identifier, assetId, filePath, fileHash, from, onProgress);
 
         public async UniTask<IAssetStatusResponse> GetAssetStatus(string identifier, uint assetId, string from = null)
             => await Network.GetAssetStatus(identifier, assetId, from);

@@ -15,28 +15,28 @@ namespace Nox.Avatars.Runtime.Editor {
 		}
 
 		private void OnThumbnailFixClicked() {
-			if (_currentThumbnailTexture != null)
+			if (_currentThumbnailTexture)
 				MakeTextureReadable(_currentThumbnailTexture);
 		}
 
 		private void MakeTextureReadable(Texture2D texture) {
-			if (texture == null) return;
+			if (!texture) return;
 
 			try {
 				var assetPath = AssetDatabase.GetAssetPath(texture);
 				if (string.IsNullOrEmpty(assetPath)) {
-					EditorUtility.DisplayDialog("Error", "Cannot find texture asset path.", "Ok");
+					Logger.OpenDialog("Error", "Cannot find texture asset path.", "Ok");
 					return;
 				}
 
 				var importer = AssetImporter.GetAtPath(assetPath) as TextureImporter;
-				if (importer == null) {
-					EditorUtility.DisplayDialog("Error", "Cannot access texture import settings.", "Ok");
+				if (!importer) {
+					Logger.OpenDialog("Error", "Cannot access texture import settings.", "Ok");
 					return;
 				}
 
-				importer.isReadable         = true;
-				importer.textureType        = TextureImporterType.Default;
+				importer.isReadable = true;
+				importer.textureType = TextureImporterType.Default;
 				importer.textureCompression = TextureImporterCompression.Uncompressed;
 
 				AssetDatabase.ImportAsset(assetPath, ImportAssetOptions.ForceUpdate);
@@ -44,7 +44,7 @@ namespace Nox.Avatars.Runtime.Editor {
 
 				var testData = texture.EncodeToPNG();
 				if (testData == null || testData.Length == 0) {
-					EditorUtility.DisplayDialog(
+					Logger.OpenDialog(
 						"Warning",
 						$"Texture '{texture.name}' is now readable but still cannot be encoded to PNG.\nYou may need to manually adjust the texture format in import settings.",
 						"Ok"
@@ -54,32 +54,32 @@ namespace Nox.Avatars.Runtime.Editor {
 				UpdateThumbnailPreviewWithTexture(texture);
 				Logger.Log($"Made texture '{texture.name}' readable for thumbnail upload.");
 			} catch (Exception ex) {
-				EditorUtility.DisplayDialog("Error", $"Failed to make texture readable: {ex.Message}", "Ok");
+				Logger.OpenDialog("Error", $"Failed to make texture readable: {ex.Message}", "Ok");
 				Logger.LogError($"Failed to make texture readable: {ex.Message}");
 			}
 		}
 
 		private async UniTask OnThumbnailUploadAsync() {
 			if (_avatar == null) {
-				EditorUtility.DisplayDialog("Error", "No avatar attached.", "Ok");
+				Logger.OpenDialog("Error", "No avatar attached.", "Ok");
 				return;
 			}
 
 			var texture = _thumbnailField?.value as Texture2D;
-			if (texture == null) {
-				EditorUtility.DisplayDialog("Error", "Please select a thumbnail image.", "Ok");
+			if (!texture) {
+				Logger.OpenDialog("Error", "Please select a thumbnail image.", "Ok");
 				return;
 			}
 
 			if (!texture.isReadable) {
-				EditorUtility.DisplayDialog("Error", "Texture must be readable. Please check the texture import settings.", "Ok");
+				Logger.OpenDialog("Error", "Texture must be readable. Please check the texture import settings.", "Ok");
 				return;
 			}
 
 			try {
 				var testData = texture.EncodeToPNG();
 				if (testData == null || testData.Length == 0) {
-					EditorUtility.DisplayDialog(
+					Logger.OpenDialog(
 						"Error",
 						"Texture cannot be encoded to PNG. This may be due to:\n" +
 						"• Unsupported texture format\n" +
@@ -94,37 +94,37 @@ namespace Nox.Avatars.Runtime.Editor {
 					return;
 				}
 			} catch (Exception ex) {
-				EditorUtility.DisplayDialog("Error", $"Texture encoding test failed: {ex.Message}\n\nPlease check texture import settings.", "Ok");
+				Logger.OpenDialog("Error", $"Texture encoding test failed: {ex.Message}\n\nPlease check texture import settings.", "Ok");
 				return;
 			}
 
 			try {
-				UpdateDisplayState(DisplayState.Loading);
 				Logger.Log("Uploading thumbnail...");
+				_thumbnailStatus.text = "Uploading thumbnail...";
 
 				var success = await Main.Instance.Network.UploadThumbnail(
 					_avatar.GetId(),
 					texture,
 					_avatar.GetServerAddress(),
-					progress => {
-						if (_thumbnailStatus != null)
-							_thumbnailStatus.text = $"Uploading thumbnail... {progress * 100:F0}%";
-					}
+					progress => _thumbnailStatus.text = $"Uploading thumbnail... {progress * 100:F0}%"
 				);
 
 				if (success) {
+					_thumbnailStatus.text = "Thumbnail uploaded successfully.";
 					Logger.Log("Thumbnail uploaded successfully.");
 					UpdateThumbnailPreview();
-					EditorUtility.DisplayDialog("Success", "Thumbnail uploaded successfully.", "Ok");
-				} else {
-					EditorUtility.DisplayDialog("Error", "Failed to upload thumbnail.", "Ok");
+				}
+				else {
+					_thumbnailStatus.text = "Failed to upload thumbnail.";
+					Logger.OpenDialog("Error", "Failed to upload thumbnail.", "Ok");
 					Logger.LogError("Failed to upload thumbnail.");
 				}
 			} catch (Exception ex) {
-				EditorUtility.DisplayDialog("Error", $"An error occurred while uploading thumbnail: {ex.Message}", "Ok");
+				_thumbnailStatus.text = "Error occurred during thumbnail upload.";
+				Logger.OpenDialog("Error", $"An error occurred while uploading thumbnail: {ex.Message}", "Ok");
 				Logger.LogError($"An error occurred while uploading thumbnail: {ex.Message}");
-			} finally {
-				UpdateDisplayState(DisplayState.Attached);
+			}
+			finally {
 			}
 		}
 	}
