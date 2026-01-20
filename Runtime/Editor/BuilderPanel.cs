@@ -18,8 +18,8 @@ using IPanel = Nox.Editor.Panel.IPanel;
 
 namespace Nox.Avatars.Runtime.Editor {
 	public class BuilderPanel : IEditorModInitializer, IPanel {
-		private static readonly string[]         PanelPath = { "avatar", "builder" };
-		internal                IEditorModCoreAPI API;
+		private static readonly string[] PanelPath = { "avatar", "builder" };
+		internal IEditorModCoreAPI API;
 
 		public void OnInitializeEditor(IEditorModCoreAPI api)
 			=> API = api;
@@ -58,10 +58,10 @@ namespace Nox.Avatars.Runtime.Editor {
 
 	public class BuilderInstance : IInstance {
 		private readonly BuilderPanel _panel;
-		private readonly IWindow      _window;
+		private readonly IWindow _window;
 
 		public BuilderInstance(BuilderPanel panel, IWindow window, Dictionary<string, object> data) {
-			_panel  = panel;
+			_panel = panel;
 			_window = window;
 			AvatarDescriptorHelper.OnAvatarSelected.AddListener(OnAvatarSelected);
 			AvatarNotificationHelper.OnNotificationsChanged.AddListener(OnNotificationsChanged);
@@ -114,10 +114,10 @@ namespace Nox.Avatars.Runtime.Editor {
 				content.Add(
 					new Label(LanguageManager.Get(notification.Content[0], notification.Content[1..] as string[])) {
 						style = {
-							flexWrap       = Wrap.Wrap,
-							whiteSpace     = WhiteSpace.Normal,
+							flexWrap = Wrap.Wrap,
+							whiteSpace = WhiteSpace.Normal,
 							unityTextAlign = TextAnchor.MiddleLeft,
-							flexGrow       = 1
+							flexGrow = 1
 						}
 					}
 				);
@@ -169,7 +169,7 @@ namespace Nox.Avatars.Runtime.Editor {
 
 			var data = new BuildData {
 				Descriptor = avatar,
-				Target     = avatar.target,
+				Target = avatar.target,
 				OutputPath = BuilderPanel.OutputFolder,
 				ShowDialog = false
 			};
@@ -179,8 +179,8 @@ namespace Nox.Avatars.Runtime.Editor {
 
 		private void OnBuildStarted() {
 			_buildingContainer.style.display = DisplayStyle.Flex;
-			_buildingStatusLabel.text        = LanguageManager.Get("avatar.builder.status.starting");
-			_buildingProgressBar.value       = 0f;
+			_buildingStatusLabel.text = LanguageManager.Get("avatar.builder.status.starting");
+			_buildingProgressBar.value = 0f;
 			_buildButton.SetEnabled(false);
 		}
 
@@ -188,9 +188,9 @@ namespace Nox.Avatars.Runtime.Editor {
 			=> OnBuildStarted();
 
 		private void OnBuildFinished(BuildResult arg0) {
-			_buildingContainer.style.display  = DisplayStyle.None;
-			_resultContainer.style.display    = DisplayStyle.Flex;
-			_resultFailedLabel.style.display  = arg0.IsFailed ? DisplayStyle.Flex : DisplayStyle.None;
+			_buildingContainer.style.display = DisplayStyle.None;
+			_resultContainer.style.display = DisplayStyle.Flex;
+			_resultFailedLabel.style.display = arg0.IsFailed ? DisplayStyle.Flex : DisplayStyle.None;
 			_resultSuccessLabel.style.display = arg0.IsFailed ? DisplayStyle.None : DisplayStyle.Flex;
 			_resultDetailsLabel.text = !arg0.IsFailed
 				? LanguageManager.Get("avatar.builder.result.success", new object[] { arg0.Output })
@@ -199,7 +199,7 @@ namespace Nox.Avatars.Runtime.Editor {
 
 		private void OnBuildProgress(float progress, string status) {
 			_buildingProgressBar.value = progress * 100;
-			_buildingStatusLabel.text  = status;
+			_buildingStatusLabel.text = status;
 		}
 
 		private void OnBuildResultOKClicked(ClickEvent evt) {
@@ -208,23 +208,23 @@ namespace Nox.Avatars.Runtime.Editor {
 			_buildButton.SetEnabled(avatar && AvatarNotificationHelper.Allowed);
 		}
 
-		private ObjectField   _selectedField;
+		private ObjectField _selectedField;
 		private VisualElement _notificationsList;
-		private TextField     _outputField;
-		private Button        _openOutputButton;
-		private Button        _buildButton;
-		private Button        _selectOutputButton;
-		private EnumField     _platformEnum;
+		private TextField _outputField;
+		private Button _openOutputButton;
+		private Button _buildButton;
+		private Button _selectOutputButton;
+		private EnumField _platformEnum;
 
 		private VisualElement _buildingContainer;
-		private Label         _buildingStatusLabel;
-		private ProgressBar   _buildingProgressBar;
+		private Label _buildingStatusLabel;
+		private ProgressBar _buildingProgressBar;
 
 		private VisualElement _resultContainer;
-		private Label         _resultFailedLabel;
-		private Label         _resultSuccessLabel;
-		private Button        _resultOkButton;
-		private Label         _resultDetailsLabel;
+		private Label _resultFailedLabel;
+		private Label _resultSuccessLabel;
+		private Button _resultOkButton;
+		private Label _resultDetailsLabel;
 
 		private VisualElement _content;
 
@@ -236,22 +236,22 @@ namespace Nox.Avatars.Runtime.Editor {
 				.GetAsset<VisualTreeAsset>("panels/builder.uxml")
 				.CloneTree();
 
-			_selectedField      = root.Q<ObjectField>("selected");
-			_notificationsList  = root.Q<VisualElement>("notifications");
-			_outputField        = root.Q<TextField>("output");
-			_openOutputButton   = root.Q<Button>("open-output");
-			_buildButton        = root.Q<Button>("build");
+			_selectedField = root.Q<ObjectField>("selected");
+			_notificationsList = root.Q<VisualElement>("notifications");
+			_outputField = root.Q<TextField>("output");
+			_openOutputButton = root.Q<Button>("open-output");
+			_buildButton = root.Q<Button>("build");
 			_selectOutputButton = root.Q<Button>("select-output");
-			_platformEnum       = root.Q<EnumField>("platform");
+			_platformEnum = root.Q<EnumField>("platform");
 
-			_buildingContainer   = root.Q<VisualElement>("building");
+			_buildingContainer = root.Q<VisualElement>("building");
 			_buildingStatusLabel = _buildingContainer.Q<Label>("status");
 			_buildingProgressBar = _buildingContainer.Q<ProgressBar>("progress");
 
-			_resultContainer    = root.Q<VisualElement>("result");
-			_resultFailedLabel  = _resultContainer.Q<Label>("failed");
+			_resultContainer = root.Q<VisualElement>("result");
+			_resultFailedLabel = _resultContainer.Q<Label>("failed");
 			_resultSuccessLabel = _resultContainer.Q<Label>("success");
-			_resultOkButton     = _resultContainer.Q<Button>("ok");
+			_resultOkButton = _resultContainer.Q<Button>("ok");
 			_resultDetailsLabel = _resultContainer.Q<Label>("details");
 
 			_selectedField.RegisterCallback<ChangeEvent<AvatarDescriptor>>(OnValueChanged);
@@ -261,9 +261,9 @@ namespace Nox.Avatars.Runtime.Editor {
 			_outputField.SetValueWithoutNotify(BuilderPanel.OutputFolder);
 			_platformEnum.RegisterCallback<ChangeEvent<Enum>>(OnPlatformChanged);
 			_resultOkButton.RegisterCallback<ClickEvent>(OnBuildResultOKClicked);
-			
+
 			_buildingContainer.style.display = DisplayStyle.None;
-			_resultContainer.style.display   = DisplayStyle.None;
+			_resultContainer.style.display = DisplayStyle.None;
 
 			OnNotificationsChanged(AvatarNotificationHelper.Notifications.ToArray());
 			OnAvatarSelected(AvatarDescriptorHelper.CurrentAvatar);

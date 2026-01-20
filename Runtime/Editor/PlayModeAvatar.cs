@@ -17,7 +17,7 @@ namespace Nox.Avatars.Runtime.Editor {
 		public Dictionary<string, object> GetArguments()
 			=> new() {
 				["source"] = this,
-				["local"]  = true
+				["local"] = true
 			};
 
 		// ReSharper disable Unity.PerformanceAnalysis

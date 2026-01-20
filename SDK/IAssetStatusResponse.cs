@@ -6,8 +6,6 @@ namespace Nox.Avatars {
 		PROCESSING,
 		COMPLETED,
 		FAILED,
-		COMPRESSING,
-		VALIDATING,
 		EMPTY
 	}
 
@@ -18,8 +16,6 @@ namespace Nox.Avatars {
 				"processing"  => AssetStatusType.PROCESSING,
 				"completed"   => AssetStatusType.COMPLETED,
 				"failed"      => AssetStatusType.FAILED,
-				"compressing" => AssetStatusType.COMPRESSING,
-				"validating"  => AssetStatusType.VALIDATING,
 				"empty"       => AssetStatusType.EMPTY,
 				_             => throw new ArgumentOutOfRangeException(nameof(status), $"Not expected status value: {status}"),
 			};
@@ -30,8 +26,6 @@ namespace Nox.Avatars {
 				AssetStatusType.PROCESSING  => "processing",
 				AssetStatusType.COMPLETED   => "completed",
 				AssetStatusType.FAILED      => "failed",
-				AssetStatusType.COMPRESSING => "compressing",
-				AssetStatusType.VALIDATING  => "validating",
 				AssetStatusType.EMPTY       => "empty",
 				_                           => throw new ArgumentOutOfRangeException(nameof(status), $"Not expected status value: {status}"),
 			};
@@ -40,12 +34,12 @@ namespace Nox.Avatars {
 	public interface IAssetStatusResponse {
 		public AssetStatusType Status { get; }
 		
-		public uint Progress { get; }
-		public uint QueuePosition { get; }
-		public string Message { get; }
-		public string Hash { get; }
-		public long Size { get; }
-		public string Error { get; }
+	public uint Progress { get; }
+	public uint QueuePosition { get; }
+	public string Message { get; }
+	public string Hash { get; }
+	public long Size { get; }
+	public string Error { get; }
 		
 		public DateTime CreatedAt { get; }
 		public DateTime StartedAt { get; }

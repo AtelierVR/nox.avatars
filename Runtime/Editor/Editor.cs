@@ -9,7 +9,7 @@ namespace Nox.Avatars.Runtime.Editor {
 	public class Editor : IEditorModInitializer {
 		internal static IEditorModCoreAPI CoreAPI;
 
-		private LanguagePack        _lang;
+		private LanguagePack _lang;
 		private EventSubscription[] _events = Array.Empty<EventSubscription>();
 
 		public static IUserAPI UserAPI
@@ -19,7 +19,7 @@ namespace Nox.Avatars.Runtime.Editor {
 
 		public void OnInitializeEditor(IEditorModCoreAPI api) {
 			CoreAPI = api;
-			_lang   = api.AssetAPI.GetAsset<LanguagePack>("lang.asset");
+			_lang = api.AssetAPI.GetAsset<LanguagePack>("lang.asset");
 			LanguageManager.AddPack(_lang);
 			_events = new[] {
 				api.EventAPI.Subscribe("user_updated", UserConnectedNotification.OnUserUpdated),
@@ -32,7 +32,7 @@ namespace Nox.Avatars.Runtime.Editor {
 			foreach (var e in _events)
 				CoreAPI.EventAPI.Unsubscribe(e);
 			_events = Array.Empty<EventSubscription>();
-			_lang   = null;
+			_lang = null;
 			CoreAPI = null;
 		}
 	}

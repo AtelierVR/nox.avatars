@@ -58,7 +58,8 @@ namespace Nox.Avatars.Runtime.Editor {
 
 			if (_avatar != null && !string.IsNullOrEmpty(_avatar.GetThumbnailUrl())) {
 				DownloadAndDisplayThumbnail().Forget();
-			} else {
+			}
+			else {
 				if (_thumbnailStatus != null)
 					_thumbnailStatus.text = _avatar == null ? "No avatar attached" : "No thumbnail available";
 				if (_thumbnailImage != null)
@@ -74,18 +75,19 @@ namespace Nox.Avatars.Runtime.Editor {
 
 			try {
 				_thumbnailStatus.text = "Loading thumbnail...";
-				_thumbnailImage.style.display     = DisplayStyle.None;
+				_thumbnailImage.style.display = DisplayStyle.None;
 				_thumbnailFixButton.style.display = DisplayStyle.None;
 
 				var thumbnailUrl = _avatar.GetThumbnailUrl();
-				var texture      = await Main.Instance.NetworkAPI.FetchTexture(thumbnailUrl);
+				var texture = await Main.Instance.NetworkAPI.FetchTexture(thumbnailUrl);
 
 				if (texture != null) {
-					_thumbnailImage.image         = texture;
-					_thumbnailImage.scaleMode     = ScaleMode.ScaleToFit;
+					_thumbnailImage.image = texture;
+					_thumbnailImage.scaleMode = ScaleMode.ScaleToFit;
 					_thumbnailImage.style.display = DisplayStyle.Flex;
-					_thumbnailStatus.text         = $"Current thumbnail - {texture.width}x{texture.height}";
-				} else {
+					_thumbnailStatus.text = $"Current thumbnail - {texture.width}x{texture.height}";
+				}
+				else {
 					_thumbnailStatus.text = "Failed to load thumbnail";
 				}
 			} catch (Exception ex) {
@@ -98,7 +100,7 @@ namespace Nox.Avatars.Runtime.Editor {
 			if (_thumbnailPreview == null || _thumbnailStatus == null || _thumbnailImage == null)
 				return;
 
-			_thumbnailImage.style.display     = DisplayStyle.None;
+			_thumbnailImage.style.display = DisplayStyle.None;
 			_thumbnailFixButton.style.display = DisplayStyle.None;
 
 			if (texture == null) {
@@ -107,8 +109,8 @@ namespace Nox.Avatars.Runtime.Editor {
 			}
 
 			if (!texture.isReadable) {
-				_thumbnailStatus.text             = "Texture must be readable";
-				_thumbnailFixButton.text          = "Fix Automatically";
+				_thumbnailStatus.text = "Texture must be readable";
+				_thumbnailFixButton.text = "Fix Automatically";
 				_thumbnailFixButton.style.display = DisplayStyle.Flex;
 				return;
 			}
@@ -117,16 +119,16 @@ namespace Nox.Avatars.Runtime.Editor {
 			if (!string.IsNullOrEmpty(assetPath)) {
 				var importer = AssetImporter.GetAtPath(assetPath) as TextureImporter;
 				if (importer != null && importer.textureType != TextureImporterType.Default) {
-					_thumbnailStatus.text             = $"Texture type is '{importer.textureType}' (recommend 'Default')";
-					_thumbnailFixButton.text          = "Fix Settings";
+					_thumbnailStatus.text = $"Texture type is '{importer.textureType}' (recommend 'Default')";
+					_thumbnailFixButton.text = "Fix Settings";
 					_thumbnailFixButton.style.display = DisplayStyle.Flex;
 					return;
 				}
 			}
 
-			_thumbnailImage.image         = texture;
+			_thumbnailImage.image = texture;
 			_thumbnailImage.style.display = DisplayStyle.Flex;
-			_thumbnailStatus.text         = $"Preview - {texture.width}x{texture.height} - Ready to upload";
+			_thumbnailStatus.text = $"Preview - {texture.width}x{texture.height} - Ready to upload";
 		}
 
 		private void ShowBuildProgress(float progress, string status) {
@@ -154,10 +156,10 @@ namespace Nox.Avatars.Runtime.Editor {
 				return;
 			}
 
-			_resultContainer.style.display    = DisplayStyle.Flex;
-			_resultFailedLabel.style.display  = success ? DisplayStyle.None : DisplayStyle.Flex;
+			_resultContainer.style.display = DisplayStyle.Flex;
+			_resultFailedLabel.style.display = success ? DisplayStyle.None : DisplayStyle.Flex;
 			_resultSuccessLabel.style.display = success ? DisplayStyle.Flex : DisplayStyle.None;
-			_resultDetailsLabel.text          = message;
+			_resultDetailsLabel.text = message;
 		}
 	}
 

@@ -1,4 +1,5 @@
 using System;
+using Newtonsoft.Json;
 using Nox.Avatars;
 using Nox.CCK.Utils;
 
@@ -6,15 +7,17 @@ namespace Nox.Avatars.Runtime.Network {
 	// ReSharper disable InconsistentNaming
 	[Serializable]
 	public class AvatarAsset : IAvatarAsset, INoxObject {
-		public uint     id;
-		public ushort   version;
-		public string   engine;
-		public string   platform;
-		public bool     is_empty;
-		public string   url;
+		public uint id;
+		public ushort version;
+		public string engine;
+		public string platform;
+		public bool is_empty;
+		public string url;
 		public string[] features;
-		public string   hash;
-		public long     size;
+		public string hash;
+
+		[JsonProperty("size")]
+		public long? _size;
 
 		public uint GetId()
 			=> id;
@@ -41,6 +44,6 @@ namespace Nox.Avatars.Runtime.Network {
 			=> hash;
 
 		public long GetSize()
-			=> size;
+			=> _size ?? -1;
 	}
 }

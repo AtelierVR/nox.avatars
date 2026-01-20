@@ -14,8 +14,7 @@ namespace Nox.Avatars {
 
 		public string[] GetFeatures();
 
-		public string GetHash();
-
-		public long GetSize();
-	}
+	public string GetHash(); 
+	public long GetSize();
+}
 }

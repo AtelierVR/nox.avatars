@@ -16,17 +16,19 @@ namespace Nox.Avatars.Runtime.Network {
 		[JsonProperty("queue_position")]
 		public uint QueuePosition { get; }
 
-		[JsonProperty("message")]
-		public string Message { get; }
+	[JsonProperty("message")]
+	public string Message { get; }
 
-		[JsonProperty("hash")]
-		public string Hash { get; }
+	[JsonProperty("hash")]
+	public string Hash { get; }
 
-		[JsonProperty("size")]
-		public long Size { get; }
+	[JsonProperty("size")]
+	public long? _initSize;
+	
+	public long Size => _initSize ?? -1;
 
-		[JsonProperty("error")]
-		public string Error { get; }
+	[JsonProperty("error")]
+	public string Error { get; }
 
 		[JsonProperty("created_at")]
 		public long? InitCreatedAt;

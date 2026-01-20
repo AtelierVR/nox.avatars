@@ -35,11 +35,11 @@ namespace Nox.Avatars.Runtime.Editor {
 
 		public override VisualElement CreateInspectorGUI() {
 			var visualTree = Resources.Load<VisualTreeAsset>("AvatarDescriptorEditor");
-			_root           = visualTree.CloneTree();
-			_modules        = _root.Q<PropertyField>("modules");
-			_target         = _root.Q<PropertyField>("target");
-			_publishId      = _root.Q<PropertyField>("publishId");
-			_publishServer  = _root.Q<PropertyField>("publishServer");
+			_root = visualTree.CloneTree();
+			_modules = _root.Q<PropertyField>("modules");
+			_target = _root.Q<PropertyField>("target");
+			_publishId = _root.Q<PropertyField>("publishId");
+			_publishServer = _root.Q<PropertyField>("publishServer");
 			_publishVersion = _root.Q<PropertyField>("publishVersion");
 			var targetProperty = serializedObject.FindProperty(nameof(AvatarDescriptor.target));
 			if (targetProperty != null && _target != null)

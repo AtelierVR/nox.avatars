@@ -181,7 +181,51 @@ namespace Nox.Avatars.Runtime.Editor {
 			}
 
 			var tempBuildPath = CreateTempBuildPath();
+			var config = Config.Load();
 			try {
+				// Check if asset already exists BEFORE building
+				ShowBuildProgress(0.1f, "Checking existing assets...");
+
+				var search = await Main.Instance.Network.SearchAssets(
+					_avatar.GetId(),
+					new AssetSearchRequest {
+						Versions = new[] { version },
+						Platforms = new[] { target.GetPlatformName() },
+						Engines = new[] { Constants.CurrentEngine.GetEngineName() },
+						ShowEmpty = true,
+						Limit = 1,
+						Offset = 0
+					},
+					_avatar.GetServerAddress()
+				);
+
+				var existingAsset = search?.GetAssets().FirstOrDefault();
+				var assetAlreadyExists = existingAsset != null && !existingAsset.IsEmpty();
+				var strictVersionChecking = config.Get("sdk.strict_version", true);
+				var autoVersion = config.Get("sdk.auto_version", true);
+
+				if (assetAlreadyExists) {
+					// Auto-increment has priority: if enabled, increment instead of blocking or overwriting
+					if (autoVersion) {
+						// Auto-increment: use version+1 instead of overwriting
+						version = (ushort)(version + 1);
+						descriptor.publishVersion = version;
+						EditorUtility.SetDirty(descriptor);
+						if (_assetVersionField != null)
+							_assetVersionField.value = version;
+
+						Logger.Log($"Asset version {version - 1} already exists. Auto-incremented to version {version}");
+					}
+					else if (strictVersionChecking) {
+						// Strict mode without auto-increment: block the upload
+						HideBuildProgress();
+						ShowResultDialog(false, $"Asset version {version} already exists for {target.GetPlatformName()}.\n\nPlease increment the version number, enable 'Auto increment version', or disable 'Strict version checking' to overwrite.");
+						Logger.LogError($"Asset version {version} already exists. Strict version checking is enabled.");
+						return;
+					}
+					// else: overwrite existing asset (strict is off, auto is off)
+				}
+
 				ShowBuildProgress(0.2f, "Building avatar...");
 
 				var buildData = new BuildData {
@@ -220,9 +264,10 @@ namespace Nox.Avatars.Runtime.Editor {
 				}
 
 				Logger.Log($"File hash: {fileHash}");
-				ShowBuildProgress(0.78f, $"Starting upload of {sizeMb:F1} MB file...");
+				ShowBuildProgress(0.78f, $"Preparing asset entry...");
 
-				var search = await Main.Instance.Network.SearchAssets(
+				// Search for asset again with the potentially updated version
+				search = await Main.Instance.Network.SearchAssets(
 					_avatar.GetId(),
 					new AssetSearchRequest {
 						Versions = new[] { version },
@@ -236,6 +281,7 @@ namespace Nox.Avatars.Runtime.Editor {
 				);
 
 				var asset = search?.GetAssets().FirstOrDefault();
+
 				if (asset == null) {
 					asset = await Main.Instance.Network.CreateAsset(
 						_avatar.GetId(),
@@ -309,7 +355,7 @@ namespace Nox.Avatars.Runtime.Editor {
 					}
 
 					// Update nextTryAt from the status response
-					if (status.NextTryAt > DateTime.UtcNow) 
+					if (status.NextTryAt > DateTime.UtcNow)
 						nextTryAt = status.NextTryAt;
 
 					Logger.LogDebug($"Asset status: {status.Status}, progress: {status.Progress}%, queue: {status.QueuePosition}");
@@ -324,18 +370,12 @@ namespace Nox.Avatars.Runtime.Editor {
 							break;
 						case AssetStatusType.COMPLETED:
 							isProcessing = false;
-							Logger.Log($"Asset processing completed. Hash: {status.Hash}, Size: {status.Size} bytes");
+							Logger.Log($"Asset processing completed. Hash: {status.Hash}, Size: {(status.Size >= 0 ? $"{status.Size} bytes" : "unknown")}");
 							break;
 						case AssetStatusType.FAILED:
 							HideBuildProgress();
 							ShowResultDialog(false, $"Asset processing failed: {status.Error ?? "Unknown error"}");
 							return;
-						case AssetStatusType.COMPRESSING:
-							ShowBuildProgress(processingProgress, "Compressing asset...");
-							break;
-						case AssetStatusType.VALIDATING:
-							ShowBuildProgress(processingProgress, "Validating asset...");
-							break;
 						default:
 							Logger.LogWarning($"Unknown asset status: {status.Status}");
 							break;

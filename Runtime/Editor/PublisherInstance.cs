@@ -15,56 +15,56 @@ using IPanel = Nox.Editor.Panel.IPanel;
 namespace Nox.Avatars.Runtime.Editor {
 	public partial class PublisherInstance : IInstance {
 		private readonly PublisherPanel _panel;
-		private readonly IWindow        _window;
-		private          Network.Avatar _avatar;
+		private readonly IWindow _window;
+		private Network.Avatar _avatar;
 
 		// UI Elements - Main
 		private VisualElement _content;
-		private ObjectField   _selectedField;
-		private EnumField     _platformEnum;
+		private ObjectField _selectedField;
+		private EnumField _platformEnum;
 
 		// UI Elements - Attach Section
-		private VisualElement        _attachContainer;
-		private TextField            _attachIdField;
-		private TextField            _attachServerField;
-		private Button               _attachButton;
-		private VisualElement        _attachedContainer;
-		private TextField            _infoServerField;
+		private VisualElement _attachContainer;
+		private TextField _attachIdField;
+		private TextField _attachServerField;
+		private Button _attachButton;
+		private VisualElement _attachedContainer;
+		private TextField _infoServerField;
 		private UnsignedIntegerField _infoIdField;
-		private TextField            _infoNameField;
-		private TextField            _infoDescriptionField;
-		private Button               _infoUpdateButton;
-		private Button               _infoDetachButton;
-		private Button               _infoRefreshButton;
+		private TextField _infoNameField;
+		private TextField _infoDescriptionField;
+		private Button _infoUpdateButton;
+		private Button _infoDetachButton;
+		private Button _infoRefreshButton;
 
 		// UI Elements - Asset Settings
-		private VisualElement        _assetContainer;
+		private VisualElement _assetContainer;
 		private UnsignedIntegerField _assetVersionField;
-		private Button               _assetDetectVersionButton;
-		private Toggle               _assetAutoVersionToggle;
-		private Toggle               _assetStrictToggle;
+		private Button _assetDetectVersionButton;
+		private Toggle _assetAutoVersionToggle;
+		private Toggle _assetStrictToggle;
 
 		// UI Elements - Thumbnail
 		private VisualElement _thumbnailContainer;
-		private ObjectField   _thumbnailField;
+		private ObjectField _thumbnailField;
 		private VisualElement _thumbnailPreview;
-		private Image         _thumbnailImage;
-		private Label         _thumbnailStatus;
-		private Button        _thumbnailFixButton;
-		private Button        _thumbnailUploadButton;
+		private Image _thumbnailImage;
+		private Label _thumbnailStatus;
+		private Button _thumbnailFixButton;
+		private Button _thumbnailUploadButton;
 
 		// UI Elements - Publish
 		private Button _publishButton;
 
 		// UI Elements - Progress & Results
 		private VisualElement _buildingContainer;
-		private Label         _buildingStatusLabel;
-		private ProgressBar   _buildingProgressBar;
+		private Label _buildingStatusLabel;
+		private ProgressBar _buildingProgressBar;
 		private VisualElement _resultContainer;
-		private Label         _resultFailedLabel;
-		private Label         _resultSuccessLabel;
-		private Button        _resultOkButton;
-		private Label         _resultDetailsLabel;
+		private Label _resultFailedLabel;
+		private Label _resultSuccessLabel;
+		private Button _resultOkButton;
+		private Label _resultDetailsLabel;
 
 		// UI Elements - States
 		private VisualElement _notLoggedContainer;
@@ -74,7 +74,7 @@ namespace Nox.Avatars.Runtime.Editor {
 		private Texture2D _currentThumbnailTexture;
 
 		public PublisherInstance(PublisherPanel panel, IWindow window, Dictionary<string, object> data) {
-			_panel  = panel;
+			_panel = panel;
 			_window = window;
 		}
 
@@ -105,7 +105,7 @@ namespace Nox.Avatars.Runtime.Editor {
 			LoadConfiguration();
 
 			_buildingContainer.style.display = DisplayStyle.None;
-			_resultContainer.style.display   = DisplayStyle.None;
+			_resultContainer.style.display = DisplayStyle.None;
 
 			AvatarDescriptorHelper.OnAvatarSelected.AddListener(OnAvatarSelected);
 			OnAvatarSelected(AvatarDescriptorHelper.CurrentAvatar);
@@ -117,55 +117,55 @@ namespace Nox.Avatars.Runtime.Editor {
 		private void CacheUIElements(VisualElement root) {
 			// Main
 			_selectedField = root.Q<ObjectField>("selected");
-			_platformEnum  = root.Q<EnumField>("platform");
+			_platformEnum = root.Q<EnumField>("platform");
 			_publishButton = root.Q<Button>("publish");
 
 			// Attach section
-			_attachContainer   = root.Q<VisualElement>("attach");
-			_attachIdField     = root.Q<TextField>("attach-id");
+			_attachContainer = root.Q<VisualElement>("attach");
+			_attachIdField = root.Q<TextField>("attach-id");
 			_attachServerField = root.Q<TextField>("attach-server");
-			_attachButton      = root.Q<Button>("attach-button");
+			_attachButton = root.Q<Button>("attach-button");
 
 			// Attached info
-			_attachedContainer    = root.Q<VisualElement>("attached");
-			_infoServerField      = root.Q<TextField>("info-server");
-			_infoIdField          = root.Q<UnsignedIntegerField>("info-id");
-			_infoNameField        = root.Q<TextField>("info-name");
+			_attachedContainer = root.Q<VisualElement>("attached");
+			_infoServerField = root.Q<TextField>("info-server");
+			_infoIdField = root.Q<UnsignedIntegerField>("info-id");
+			_infoNameField = root.Q<TextField>("info-name");
 			_infoDescriptionField = root.Q<TextField>("info-description");
-			_infoUpdateButton     = root.Q<Button>("info-update");
-			_infoDetachButton     = root.Q<Button>("info-detach");
-			_infoRefreshButton    = root.Q<Button>("info-refresh");
+			_infoUpdateButton = root.Q<Button>("info-update");
+			_infoDetachButton = root.Q<Button>("info-detach");
+			_infoRefreshButton = root.Q<Button>("info-refresh");
 
 			// Asset settings
-			_assetContainer           = root.Q<VisualElement>("asset-settings");
-			_assetVersionField        = root.Q<UnsignedIntegerField>("asset-version");
+			_assetContainer = root.Q<VisualElement>("asset-settings");
+			_assetVersionField = root.Q<UnsignedIntegerField>("asset-version");
 			_assetDetectVersionButton = root.Q<Button>("asset-detect-version");
-			_assetAutoVersionToggle   = root.Q<Toggle>("asset-auto-version");
-			_assetStrictToggle        = root.Q<Toggle>("asset-strict");
+			_assetAutoVersionToggle = root.Q<Toggle>("asset-auto-version");
+			_assetStrictToggle = root.Q<Toggle>("asset-strict");
 
 			// Thumbnail
-			_thumbnailContainer    = root.Q<VisualElement>("thumbnail-section");
-			_thumbnailField        = root.Q<ObjectField>("thumbnail-field");
-			_thumbnailPreview      = root.Q<VisualElement>("thumbnail-preview");
-			_thumbnailImage        = root.Q<Image>("thumbnail-image");
-			_thumbnailStatus       = root.Q<Label>("thumbnail-status");
-			_thumbnailFixButton    = root.Q<Button>("thumbnail-fix-button");
+			_thumbnailContainer = root.Q<VisualElement>("thumbnail-section");
+			_thumbnailField = root.Q<ObjectField>("thumbnail-field");
+			_thumbnailPreview = root.Q<VisualElement>("thumbnail-preview");
+			_thumbnailImage = root.Q<Image>("thumbnail-image");
+			_thumbnailStatus = root.Q<Label>("thumbnail-status");
+			_thumbnailFixButton = root.Q<Button>("thumbnail-fix-button");
 			_thumbnailUploadButton = root.Q<Button>("thumbnail-upload");
 
 			// Progress & Results
-			_buildingContainer   = root.Q<VisualElement>("building");
+			_buildingContainer = root.Q<VisualElement>("building");
 			_buildingStatusLabel = root.Q<Label>("status");
 			_buildingProgressBar = root.Q<ProgressBar>("progress");
-			_resultContainer     = root.Q<VisualElement>("result");
-			_resultFailedLabel   = root.Q<Label>("failed");
-			_resultSuccessLabel  = root.Q<Label>("success");
-			_resultOkButton      = root.Q<Button>("ok");
-			_resultDetailsLabel  = root.Q<Label>("details");
+			_resultContainer = root.Q<VisualElement>("result");
+			_resultFailedLabel = root.Q<Label>("failed");
+			_resultSuccessLabel = root.Q<Label>("success");
+			_resultOkButton = root.Q<Button>("ok");
+			_resultDetailsLabel = root.Q<Label>("details");
 
 			// States
-			_notLoggedContainer    = root.Q<VisualElement>("not-logged");
+			_notLoggedContainer = root.Q<VisualElement>("not-logged");
 			_noDescriptorContainer = root.Q<VisualElement>("no-descriptor");
-			_loadingContainer      = root.Q<VisualElement>("loading");
+			_loadingContainer = root.Q<VisualElement>("loading");
 		}
 
 		private void SetupEventHandlers() {
@@ -245,7 +245,7 @@ namespace Nox.Avatars.Runtime.Editor {
 			var descriptor = AvatarDescriptorHelper.CurrentAvatar;
 			if (!descriptor || _avatar == null) return;
 
-			descriptor.publishId     = 0;
+			descriptor.publishId = 0;
 			descriptor.publishServer = "";
 			EditorUtility.SetDirty(descriptor);
 			_avatar = null;

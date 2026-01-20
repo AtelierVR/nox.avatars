@@ -5,7 +5,7 @@ using Nox.Users;
 namespace Nox.Avatars.Runtime.Editor {
 	public class UserConnectedNotification {
 		private const string NotConnectedUid = "not_connected";
-		private const string ConnectedUid    = "connected";
+		private const string ConnectedUid = "connected";
 
 		public static void OnUserUpdated(EventData context)
 			=> OnUserUpdated(context.TryGet(0, out ICurrentUser u) ? u : null);
