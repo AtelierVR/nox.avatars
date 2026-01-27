@@ -44,6 +44,6 @@ namespace Nox.Avatars.Runtime.Network {
 			=> hash;
 
 		public long GetSize()
-			=> _size ?? -1;
+			=> _size ?? 0;
 	}
 }

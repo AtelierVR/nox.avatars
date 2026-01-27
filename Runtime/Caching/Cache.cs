@@ -61,7 +61,7 @@ namespace Nox.Avatars.Runtime.Caching {
 		public async UniTask Wait() {
 			if (!IsRunning()) return;
 			Logger.Log($"Waiting for download to complete: {Url} (Hash: {Hash})");
-			await UniTask.WaitUntil(() => !IsRunning());
+			await UniTask.WaitUntil(() => !IsRunning(), cancellationToken: _externalToken);
 		}
 
 		public UnityEvent<float> GetProgressEvent()
@@ -92,7 +92,7 @@ namespace Nox.Avatars.Runtime.Caching {
 				SetProgress(0f);
 
 				// Download
-				var path = await Main.Instance.NetworkAPI
+				var path = await Main.NetworkAPI
 					.DownloadFile(Url, hash: Hash, progress: SetProgress, token: combinedToken);
 
 				if (combinedToken.IsCancellationRequested) {
@@ -112,7 +112,7 @@ namespace Nox.Avatars.Runtime.Caching {
 				SetProgress(1f);
 			} catch (Exception e) {
 				// Handle other exceptions
-				Logger.LogException(e);
+				Logger.LogError(e);
 				SetProgress(0f);
 			}
 

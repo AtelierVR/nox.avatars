@@ -31,17 +31,17 @@ namespace Nox.Avatars.Runtime
         private Search.Search _search;
         private LanguagePack _lang;
 
-        public INetworkAPI NetworkAPI
+        public static INetworkAPI NetworkAPI
             => Instance.CoreAPI.ModAPI
                        .GetMod("network")
                        ?.GetInstance<INetworkAPI>();
 
-        internal ISearchAPI SearchAPI
+        static internal ISearchAPI SearchAPI
             => Instance.CoreAPI.ModAPI
                        .GetMod("search")
                        ?.GetInstance<ISearchAPI>();
 
-        public IUserAPI UserAPI
+        public static IUserAPI UserAPI
             => Instance.CoreAPI.ModAPI
                        .GetMod("user")
                        ?.GetInstance<IUserAPI>();
@@ -141,7 +141,7 @@ namespace Nox.Avatars.Runtime
             => await AvatarLoader.LoadFromCache(hash, arguments, progress, token)
                 ?? await LoadError(arguments, progress, token);
 
-        public async UniTask<IAvatar> Fetch(string identifier, string from = null)
+        public async UniTask<IAvatar> Fetch(IAvatarIdentifier identifier, string from = null)
             => await Network.Fetch(identifier, from);
 
         public ISearchRequest MakeSearchRequest()
@@ -153,26 +153,26 @@ namespace Nox.Avatars.Runtime
         public async UniTask<IAvatar> Create(ICreateAvatarRequest data, string server)
             => await Network.Create(CreateAvatarRequest.FromBase(data), server);
 
-        public async UniTask<IAvatar> Update(string identifier, IUpdateAvatarRequest form, string from = null)
-            => await Network.Update(identifier, UpdateAvatarRequest.FromBase(form), from);
+        public async UniTask<IAvatar> Update(IAvatarIdentifier identifier, IUpdateAvatarRequest form, string from = null)
+            => await Network.Update(AvatarIdentifier.From(identifier), UpdateAvatarRequest.FromBase(form), from);
 
-        public async UniTask<bool> Delete(string identifier, string from = null)
-            => await Network.Delete(identifier, from);
+        public async UniTask<bool> Delete(IAvatarIdentifier identifier, string from = null)
+            => await Network.Delete(AvatarIdentifier.From(identifier), from);
 
-        public async UniTask<IAssetSearchResponse> SearchAssets(string identifier, IAssetSearchRequest data, string from = null)
-            => await Network.SearchAssets(identifier, AssetSearchRequest.FromBase(data), from);
+        public async UniTask<IAssetSearchResponse> SearchAssets(IAvatarIdentifier identifier, IAssetSearchRequest data, string from = null)
+            => await Network.SearchAssets(AvatarIdentifier.From(identifier), AssetSearchRequest.FromBase(data), from);
 
-        public async UniTask<bool> UploadThumbnail(string identifier, Texture2D texture, string from = null, Action<float> onProgress = null)
-            => await Network.UploadThumbnail(identifier, texture, from, onProgress);
+        public async UniTask<bool> UploadThumbnail(IAvatarIdentifier identifier, Texture2D texture, string from = null, Action<float> onProgress = null)
+            => await Network.UploadThumbnail(AvatarIdentifier.From(identifier), texture, from, onProgress);
 
-        public async UniTask<IUploadAssetResponse> UploadAssetFile(string identifier, uint assetId, string filePath, string fileHash = null, string from = null, Action<float> onProgress = null)
-            => await Network.UploadAssetFile(identifier, assetId, filePath, fileHash, from, onProgress);
+        public async UniTask<IUploadAssetResponse> UploadAssetFile(IAvatarIdentifier identifier, uint assetId, string filePath, string fileHash = null, string from = null, Action<float> onProgress = null)
+            => await Network.UploadAssetFile(AvatarIdentifier.From(identifier), assetId, filePath, fileHash, from, onProgress);
 
-        public async UniTask<IAssetStatusResponse> GetAssetStatus(string identifier, uint assetId, string from = null)
-            => await Network.GetAssetStatus(identifier, assetId, from);
+        public async UniTask<IAssetStatusResponse> GetAssetStatus(IAvatarIdentifier identifier, uint assetId, string from = null)
+            => await Network.GetAssetStatus(AvatarIdentifier.From(identifier), assetId, from);
 
-        public async UniTask<IAvatarAsset> CreateAsset(string identifier, ICreateAssetRequest data, string from = null)
-            => await Network.CreateAsset(identifier, CreateAssetRequest.FromBase(data), from);
+        public async UniTask<IAvatarAsset> CreateAsset(IAvatarIdentifier identifier, ICreateAssetRequest data, string from = null)
+            => await Network.CreateAsset(AvatarIdentifier.From(identifier), CreateAssetRequest.FromBase(data), from);
 
         public ICaching DownloadToCache(string url, string hash = null, string from = null, UnityAction<float> progress = null, CancellationToken token = default)
         {
@@ -187,11 +187,11 @@ namespace Nox.Avatars.Runtime
         public bool HasInCache(string hash)
             => Cache.Has(hash);
 
-        public async UniTask<IAvatarIdentifier[]> AddFavorite(string identifier, string from = null)
-            => await Network.AddFavorite(identifier, from);
+        public async UniTask<IAvatarIdentifier[]> AddFavorite(IAvatarIdentifier identifier, string from = null)
+            => await Network.AddFavorite(AvatarIdentifier.From(identifier), from);
 
-        public async UniTask<IAvatarIdentifier[]> RemoveFavorite(string identifier, string from = null)
-            => await Network.RemoveFavorite(identifier, from);
+        public async UniTask<IAvatarIdentifier[]> RemoveFavorite(IAvatarIdentifier identifier, string from = null)
+            => await Network.RemoveFavorite(AvatarIdentifier.From(identifier), from);
 
         public async UniTask<IAvatarIdentifier[]> GetFavorites(string from = null)
             => await Network.FetchFavorites(from);

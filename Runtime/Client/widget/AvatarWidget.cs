@@ -80,7 +80,7 @@ namespace Nox.Avatars.Runtime.widget {
 				return;
 			}
 
-			var banner = await Main.Instance.NetworkAPI.FetchTexture(url);
+			var banner = await Main.NetworkAPI.FetchTexture(url);
 			if (!banner || banner.height == 0) {
 				_container.SetActive(false);
 				return;

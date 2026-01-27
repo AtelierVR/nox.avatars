@@ -23,8 +23,8 @@ namespace Nox.Avatars.Pipeline {
 		public static bool IsBuilding;
 
 		public static readonly UnityEvent<float, string> OnBuildProgress = new();
-		public static readonly UnityEvent<BuildResult>   OnBuildFinished = new();
-		public static readonly UnityEvent<BuildData>     OnBuildStarted  = new();
+		public static readonly UnityEvent<BuildResult> OnBuildFinished = new();
+		public static readonly UnityEvent<BuildData> OnBuildStarted = new();
 
 
 		[MenuItem("Nox/Avatar/Build Avatar")]
@@ -58,23 +58,26 @@ namespace Nox.Avatars.Pipeline {
 				result = await Build(data);
 			} catch (Exception e) {
 				result = new BuildResult {
-					Type    = BuildResultType.Failed,
+					Type = BuildResultType.Failed,
 					Message = $"Build failed with exception: {e.Message}"
 				};
 				Logger.LogError(result.Message);
-			} finally {
+			}
+			finally {
 				IsBuilding = false;
 			}
 
 			if (result.Type == BuildResultType.Success) {
 				Logger.OpenDialog("Build Success", "The world has been built successfully!", "OK");
-			} else Logger.OpenDialog("Build Failed", result.Message, "OK");
+			}
+			else Logger.OpenDialog("Build Failed", result.Message, "OK");
 		}
 
 		public static async UniTask<BuildResult> Build(BuildData data) {
 			// Wrap user progress callback to also emit UnityEvent
 			var userProgress = data.ProgressCallback;
-			data.ProgressCallback = (p, m) => {
+			data.ProgressCallback = (p, m) =>
+			{
 				try {
 					OnBuildProgress.Invoke(p, m);
 				} catch {
@@ -141,7 +144,7 @@ namespace Nox.Avatars.Pipeline {
 						EditorSceneManager.RestoreSceneManagerSetup(rollback);
 						return Finish(
 							new BuildResult {
-								Type    = BuildResultType.Failed,
+								Type = BuildResultType.Failed,
 								Message = "Failed to save open scenes. Please ensure all scenes are saved before building."
 							}
 						);
@@ -172,7 +175,7 @@ namespace Nox.Avatars.Pipeline {
 
 					// Report progress: Building AssetBundle
 					data.ProgressCallback?.Invoke(0.80f, "Building AssetBundle...");
-					await UniTask.Yield();
+					await UniTask.NextFrame();
 
 					// Création de l'AssetBundle des scènes
 					var assetBundleResult = await BuildPrefabsAssetBundle(data);
@@ -185,35 +188,38 @@ namespace Nox.Avatars.Pipeline {
 					data.ProgressCallback?.Invoke(0.95f, "Cleaning up...");
 					await UniTask.Yield();
 
+					// TODO: Cleanup temporary files
+
 					// Report progress: Complete
 					data.ProgressCallback?.Invoke(1.0f, "Build completed successfully!");
 					await UniTask.Yield();
 
 					return Finish(
 						new BuildResult {
-							Type   = BuildResultType.Success,
+							Type = BuildResultType.Success,
 							Output = assetBundleResult.Output
 						}
 					);
 				} catch (Exception e) {
 					// Restore scene on error
 					EditorSceneManager.RestoreSceneManagerSetup(rollback);
-					Logger.LogException(new Exception("Build failed with exception", e));
+					Logger.LogError(new Exception("Build failed with exception", e));
 					return Finish(
 						new BuildResult {
-							Type    = BuildResultType.Failed,
+							Type = BuildResultType.Failed,
 							Message = e.Message + "\nSee console for details."
 						}
 					);
-				} finally {
+				}
+				finally {
 					// Cleanup state
 					IsBuilding = false;
 				}
 			} catch (Exception e) {
-				Logger.LogException(new Exception("Build failed with exception", e));
+				Logger.LogError(new Exception("Build failed with exception", e));
 				return Finish(
 					new BuildResult {
-						Type    = BuildResultType.Failed,
+						Type = BuildResultType.Failed,
 						Message = e.Message + "\nSee console for details."
 					}
 				);
@@ -226,36 +232,36 @@ namespace Nox.Avatars.Pipeline {
 		private static BuildResult ValidateBuildPrerequisites(BuildData data) {
 			if (IsBuilding)
 				return new BuildResult {
-					Type    = BuildResultType.AlreadyBuilding,
+					Type = BuildResultType.AlreadyBuilding,
 					Message = "A build is already in progress."
 				};
 
 			if (EditorApplication.isCompiling)
 				return new BuildResult {
-					Type    = BuildResultType.EditorCompiling,
+					Type = BuildResultType.EditorCompiling,
 					Message = "Unity is currently compiling scripts. Please wait until the compilation is complete."
 				};
 
 			if (EditorApplication.isPlaying)
 				return new BuildResult {
-					Type    = BuildResultType.EditorPlaying,
+					Type = BuildResultType.EditorPlaying,
 					Message = "Unity is currently in play mode. Please stop playing before building."
 				};
 
 			if (data.Target == Platform.None)
 				return new BuildResult {
-					Type    = BuildResultType.InvalidTarget,
+					Type = BuildResultType.InvalidTarget,
 					Message = "No build target specified. Please select a valid target platform."
 				};
 
 			if (!data.Target.IsSupported())
 				return new BuildResult {
-					Type    = BuildResultType.UnsupportedTarget,
+					Type = BuildResultType.UnsupportedTarget,
 					Message = $"The build target {data.Target} is not supported."
 				};
 
 			return new BuildResult {
-				Type   = BuildResultType.Success,
+				Type = BuildResultType.Success,
 				Output = data.OutputPath
 			};
 		}
@@ -266,17 +272,16 @@ namespace Nox.Avatars.Pipeline {
 		private static BuildResult PrepareTemporaryDirectories(BuildData data) {
 			if (!data.Descriptor || !data.Descriptor.gameObject)
 				return new BuildResult {
-					Type    = BuildResultType.InvalidGameObject,
+					Type = BuildResultType.InvalidGameObject,
 					Message = "The AvatarDescriptor is not set or the game object is invalid."
 				};
 
 			var mainScene = data.Descriptor.gameObject.scene;
-			if (!mainScene.IsValid() || !mainScene.isLoaded) {
+			if (!mainScene.IsValid() || !mainScene.isLoaded)
 				return new BuildResult {
-					Type    = BuildResultType.InvalidGameObject,
+					Type = BuildResultType.InvalidGameObject,
 					Message = "The scene is not valid. Please ensure the scene is properly set up."
 				};
-			}
 
 			var tempPath = data.TempPath;
 			if (Directory.Exists(tempPath))
@@ -284,7 +289,7 @@ namespace Nox.Avatars.Pipeline {
 					Directory.Delete(tempPath, true);
 				} catch (Exception e) {
 					return new BuildResult {
-						Type    = BuildResultType.Failed,
+						Type = BuildResultType.Failed,
 						Message = $"Failed to delete temporary directory: {e.Message}"
 					};
 				}
@@ -292,7 +297,7 @@ namespace Nox.Avatars.Pipeline {
 			Directory.CreateDirectory(tempPath);
 
 			return new BuildResult {
-				Type   = BuildResultType.Success,
+				Type = BuildResultType.Success,
 				Output = tempPath
 			};
 		}
@@ -309,25 +314,13 @@ namespace Nox.Avatars.Pipeline {
 			if (compilableScripts.Count == 0)
 				Logger.Log("No compilable scripts found in the loaded scenes.");
 
-			var compilationFailed = false;
-			foreach (var script in compilableScripts)
-				try {
-					Logger.Log($"Compiling script: {script.GetType().Name} (Order: {script.CompileOrder})");
-					script.Compile();
-					await script.CompileAsync();
-				} catch (Exception e) {
-					Logger.LogError($"Failed to compile script {script.GetType().Name}: {e.Message}");
-					compilationFailed = true;
-					break;
-				}
-
-			if (compilationFailed)
+			var compiler = new Compiler(compilableScripts);
+			if (!await compiler.Compile()) 
 				return new BuildResult {
-					Type    = BuildResultType.Failed,
+					Type = BuildResultType.Failed,
 					Message = "Script compilation failed. Original scenes have been restored from backup."
 				};
-
-
+			
 			var removeScripts = mainObject
 				.GetComponentsInChildren<IRemoveOnBuild>(true)
 				.ToArray();
@@ -343,7 +336,7 @@ namespace Nox.Avatars.Pipeline {
 						scriptObject.DestroyImmediate();
 				} catch (Exception e) {
 					var ex = new Exception($"Failed to remove script {script?.GetType().Name ?? "null"}", e);
-					Logger.LogException(ex);
+					Logger.LogError(ex);
 					exceptions.Add(ex);
 				}
 
@@ -360,7 +353,7 @@ namespace Nox.Avatars.Pipeline {
 
 			if (!EditorSceneManager.SaveOpenScenes())
 				return new BuildResult {
-					Type    = BuildResultType.Failed,
+					Type = BuildResultType.Failed,
 					Message = "Failed to save open scenes after compilation. Original scenes have been restored from backup."
 				};
 
@@ -372,7 +365,7 @@ namespace Nox.Avatars.Pipeline {
 			await UniTask.Yield();
 
 			return new BuildResult {
-				Type   = BuildResultType.Success,
+				Type = BuildResultType.Success,
 				Output = null
 			};
 		}
@@ -386,15 +379,14 @@ namespace Nox.Avatars.Pipeline {
 			try {
 				// Create prefab from the avatar descriptor GameObject
 				var avatarGameObject = data.Descriptor.gameObject;
-				var prefabPath       = tempPath + "Avatar.prefab";
+				var prefabPath = tempPath + "Avatar.prefab";
 
 				// Validate avatar GameObject before creating prefab
-				if (!avatarGameObject) {
+				if (!avatarGameObject)
 					return new BuildResult {
-						Type    = BuildResultType.Failed,
+						Type = BuildResultType.Failed,
 						Message = "Avatar GameObject is null or invalid."
 					};
-				}
 
 				if (!avatarGameObject.activeInHierarchy)
 					Logger.LogWarning("Avatar GameObject is not active in hierarchy. This might cause prefab creation to fail.");
@@ -416,21 +408,19 @@ namespace Nox.Avatars.Pipeline {
 
 					if (problematicComponents.Count > 0) {
 						Logger.LogError($"Still found {problematicComponents.Count} problematic component(s) after cleanup attempt:");
-						foreach (var (go, index) in problematicComponents) {
+						foreach (var (go, index) in problematicComponents)
 							Logger.LogError($"  - GameObject '{go?.name}' at component index {index}");
-						}
 
 						return new BuildResult {
-							Type    = BuildResultType.Failed,
+							Type = BuildResultType.Failed,
 							Message = $"Avatar GameObject contains {problematicComponents.Count} problematic component(s) that prevent prefab creation. Please fix these issues manually."
 						};
 					}
 				}
 
 				// Ensure the temp directory exists and is writable
-				if (!Directory.Exists(tempPath)) {
+				if (!Directory.Exists(tempPath))
 					Directory.CreateDirectory(tempPath);
-				}
 
 				// Check if we can write to the temp directory
 				var testFile = Path.Combine(tempPath, "test.tmp");
@@ -439,7 +429,7 @@ namespace Nox.Avatars.Pipeline {
 					File.Delete(testFile);
 				} catch (Exception e) {
 					return new BuildResult {
-						Type    = BuildResultType.Failed,
+						Type = BuildResultType.Failed,
 						Message = $"Cannot write to temporary directory '{tempPath}': {e.Message}"
 					};
 				}
@@ -451,12 +441,11 @@ namespace Nox.Avatars.Pipeline {
 
 				// Créer le prefab d'abord
 				var prefab = PrefabUtility.SaveAsPrefabAsset(avatarGameObject, prefabPath);
-				if (!prefab) {
+				if (!prefab)
 					return new BuildResult {
-						Type    = BuildResultType.Failed,
+						Type = BuildResultType.Failed,
 						Message = $"Failed to create avatar prefab.\nCheck Unity Console for detailed errors."
 					};
-				}
 
 				Logger.Log($"Successfully created avatar prefab at: {prefabPath}");
 
@@ -466,7 +455,7 @@ namespace Nox.Avatars.Pipeline {
 
 				Logger.Log($"Successfully processed avatar prefab");
 				return new BuildResult {
-					Type   = BuildResultType.Success,
+					Type = BuildResultType.Success,
 					Output = prefabPath
 				};
 
@@ -477,9 +466,8 @@ namespace Nox.Avatars.Pipeline {
 					var components = go.GetComponents<Component>();
 					for (var i = 0; i < components.Length; i++) {
 						var component = components[i];
-						if (!component) {
-							problematicComponents.Add((go, i));
-						}
+						if (component) continue;
+						problematicComponents.Add((go, i));
 					}
 
 					// Recursively check children
@@ -487,9 +475,9 @@ namespace Nox.Avatars.Pipeline {
 						CheckForProblematicComponents(child.gameObject);
 				}
 			} catch (Exception e) {
-				Logger.LogException(e);
+				Logger.LogError(e);
 				return new BuildResult {
-					Type    = BuildResultType.Failed,
+					Type = BuildResultType.Failed,
 					Message = $"Failed to process avatar prefab: {e.Message}"
 				};
 			}
@@ -505,25 +493,25 @@ namespace Nox.Avatars.Pipeline {
 				// Validate input data
 				if (data == null)
 					return new BuildResult {
-						Type    = BuildResultType.Failed,
+						Type = BuildResultType.Failed,
 						Message = "BuildData is null."
 					};
 
 				if (string.IsNullOrEmpty(data.TempPath))
 					return new BuildResult {
-						Type    = BuildResultType.Failed,
+						Type = BuildResultType.Failed,
 						Message = "Temporary path is null or empty."
 					};
 
 				if (string.IsNullOrEmpty(data.OutputPath))
 					return new BuildResult {
-						Type    = BuildResultType.Failed,
+						Type = BuildResultType.Failed,
 						Message = "Output path is null or empty."
 					};
 
 				if (string.IsNullOrEmpty(data.Filename))
 					return new BuildResult {
-						Type    = BuildResultType.Failed,
+						Type = BuildResultType.Failed,
 						Message = "Filename is null or empty."
 					};
 
@@ -541,7 +529,7 @@ namespace Nox.Avatars.Pipeline {
 
 				if (prefabFiles.Length == 0)
 					return new BuildResult {
-						Type    = BuildResultType.Failed,
+						Type = BuildResultType.Failed,
 						Message = "No avatar prefab found to bundle."
 					};
 
@@ -563,11 +551,12 @@ namespace Nox.Avatars.Pipeline {
 							relativePath = "Assets" + relativePath[Application.dataPath.Length..];
 						validAssetFiles.Add(relativePath);
 						Logger.Log($"  Valid asset: {relativePath}");
-					} else Logger.LogWarning($"Asset file does not exist: {assetFile}");
+					}
+					else Logger.LogWarning($"Asset file does not exist: {assetFile}");
 
 				if (validAssetFiles.Count == 0)
 					return new BuildResult {
-						Type    = BuildResultType.Failed,
+						Type = BuildResultType.Failed,
 						Message = "No valid asset files found for bundling."
 					};
 
@@ -575,9 +564,10 @@ namespace Nox.Avatars.Pipeline {
 				var assetBundleBuilds = new AssetBundleBuild[1];
 				assetBundleBuilds[0] = new AssetBundleBuild {
 					assetBundleName = data.Filename,
-					assetNames      = validAssetFiles.ToArray(),
+					assetNames = validAssetFiles.ToArray(),
 					addressableNames = validAssetFiles.Select(
-							path => {
+							path =>
+							{
 								var fileName = Path.GetFileNameWithoutExtension(path);
 								// Special handling for the main avatar prefab
 								if (path.EndsWith(".prefab") && path.Contains(tempPath)) {
@@ -595,13 +585,13 @@ namespace Nox.Avatars.Pipeline {
 				// Validate the AssetBundleBuild
 				if (assetBundleBuilds[0].assetNames.Length == 0)
 					return new BuildResult {
-						Type    = BuildResultType.Failed,
+						Type = BuildResultType.Failed,
 						Message = "No valid assets found for AssetBundle build."
 					};
 
 				if (string.IsNullOrEmpty(assetBundleBuilds[0].assetBundleName))
 					return new BuildResult {
-						Type    = BuildResultType.Failed,
+						Type = BuildResultType.Failed,
 						Message = "AssetBundle name is null or empty."
 					};
 
@@ -637,7 +627,7 @@ namespace Nox.Avatars.Pipeline {
 				if (!buildSuccess) {
 					Logger.LogError("Avatar AssetBundle build failed. Check console for details.");
 					return new BuildResult {
-						Type    = BuildResultType.Failed,
+						Type = BuildResultType.Failed,
 						Message = "Failed to build avatar AssetBundle. Check console for details."
 					};
 				}
@@ -645,13 +635,13 @@ namespace Nox.Avatars.Pipeline {
 				Logger.Log($"Avatar AssetBundle '{data.Filename}' built successfully at: {outputPath}");
 				Logger.Log($"Avatar prefab built without dependencies");
 				return new BuildResult {
-					Type   = BuildResultType.Success,
+					Type = BuildResultType.Success,
 					Output = Path.Combine(outputPath, data.Filename)
 				};
 			} catch (Exception e) {
 				Logger.LogError($"Avatar AssetBundle build failed: {e.Message}");
 				return new BuildResult {
-					Type    = BuildResultType.Failed,
+					Type = BuildResultType.Failed,
 					Message = $"Avatar AssetBundle build failed: {e.Message}"
 				};
 			}
@@ -713,22 +703,6 @@ namespace Nox.Avatars.Pipeline {
 				AssetDatabase.Refresh();
 				AssetDatabase.SaveAssets();
 
-				// Use the legacy BuildPipeline first as fallback
-				Logger.Log("Attempting AssetBundle build with legacy BuildPipeline...");
-				var legacyManifest = BuildPipeline.BuildAssetBundles(
-					outputPath,
-					assetBundleBuilds,
-					options,
-					buildTarget
-				);
-
-				if (legacyManifest != null) {
-					Logger.Log("AssetBundle build completed successfully with legacy BuildPipeline.");
-					return true;
-				}
-
-				// If legacy fails, try with CompatibilityBuildPipeline
-				Logger.Log("Legacy BuildPipeline failed, trying CompatibilityBuildPipeline...");
 				var manifest = CompatibilityBuildPipeline.BuildAssetBundles(
 					outputPath,
 					assetBundleBuilds,
@@ -736,11 +710,12 @@ namespace Nox.Avatars.Pipeline {
 					buildTarget
 				);
 
-				bool success = manifest != null;
+				bool success = manifest;
 
 				if (success) {
 					Logger.Log("AssetBundle build completed successfully with CompatibilityBuildPipeline.");
-				} else {
+				}
+				else {
 					Logger.LogError("Both BuildPipeline methods failed. No manifest was created.");
 
 					// Additional debugging information
@@ -780,7 +755,7 @@ namespace Nox.Avatars.Pipeline {
 				GameObjectUtility.RemoveMonoBehavioursWithMissingScript(go);
 
 				var finalComponentCount = go.GetComponentCount();
-				var removedCount        = initialComponentCount - finalComponentCount;
+				var removedCount = initialComponentCount - finalComponentCount;
 
 				if (removedCount > 0) {
 					Logger.Log($"Removed {removedCount} missing component(s) from GameObject '{go.name}'");
@@ -833,7 +808,7 @@ namespace Nox.Avatars.Pipeline {
 
 				try {
 					// Check for any remaining null components
-					var components        = go.GetComponents<Component>();
+					var components = go.GetComponents<Component>();
 					var hasNullComponents = components.Any(c => !c);
 
 					if (hasNullComponents) {
@@ -864,7 +839,7 @@ namespace Nox.Avatars.Pipeline {
 		/// <param name="platform"></param>
 		/// <returns>A filename in the format: date-sceneName.noxw</returns>
 		private static string GenerateDefaultFilename(string mainSceneName, Platform platform) {
-			var date      = DateTime.Now.ToString("yyyy-MM-dd-HHmm");
+			var date = DateTime.Now.ToString("yyyy-MM-dd-HHmm");
 			var sceneName = mainSceneName.ToLowerInvariant();
 
 			// Remove any invalid filename characters from scene name
@@ -879,7 +854,7 @@ namespace Nox.Avatars.Pipeline {
 		/// <returns>A random hash string</returns>
 		private static string GenerateRandomHash() {
 			var random = new Random();
-			var bytes  = new byte[16];
+			var bytes = new byte[16];
 			random.NextBytes(bytes);
 			return BitConverter.ToString(bytes).Replace("-", "").ToLowerInvariant();
 		}

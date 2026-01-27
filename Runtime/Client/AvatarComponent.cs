@@ -2,6 +2,7 @@ using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Nox.Avatars.Controllers;
+using Nox.CCK.Avatars;
 using Nox.CCK.Language;
 using Nox.CCK.Utils;
 using UnityEngine;
@@ -62,7 +63,7 @@ namespace Nox.Avatars.Runtime.client {
             if (controller is IControllerAvatar ca) {
                 var id = Page.Avatar.GetIdentifier();
                 await UniTask.WhenAll(
-                    Main.Instance.UserAPI.UpdateCurrent(Main.Instance.UserAPI.MakeUpdateCurrentRequest().SetAvatar(id.ToString())),
+                    Main.UserAPI.UpdateCurrent(Main.UserAPI.MakeUpdateCurrentRequest().SetAvatar(id.ToString())),
                     ca.SetAvatar(id)
                 );
             }
@@ -146,7 +147,7 @@ namespace Nox.Avatars.Runtime.client {
 
             _thumbnailTokenSource = new CancellationTokenSource();
             if (avatar?.GetThumbnailUrl() != null) {
-                var texture = await Main.Instance.NetworkAPI
+                var texture = await Main.NetworkAPI
                                         .FetchTexture(avatar.GetThumbnailUrl())
                                         .AttachExternalCancellation(_thumbnailTokenSource.Token);
                 if (texture) {
@@ -198,11 +199,11 @@ namespace Nox.Avatars.Runtime.client {
             _isFavorite = !_isFavorite;
             favoriteButton.interactable = false;
             HoverFavorite(_isFavoriteHover);
-            var id = Page.Avatar.GetIdentifier();
+            var id = AvatarIdentifier.From(Page.Avatar.GetIdentifier());
 
             var favorites = _isFavorite
-                ? await Main.Instance.Network.AddFavorite(id.ToString())
-                : await Main.Instance.Network.RemoveFavorite(id.ToString());
+                ? await Main.Instance.Network.AddFavorite(id)
+                : await Main.Instance.Network.RemoveFavorite(id);
 
             _isFavorite = favorites.Any(f => f.Equals(id));
             HoverFavorite(_isFavoriteHover);

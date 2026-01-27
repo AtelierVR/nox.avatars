@@ -79,7 +79,7 @@ namespace Nox.Avatars.Runtime.Editor {
 				_thumbnailFixButton.style.display = DisplayStyle.None;
 
 				var thumbnailUrl = _avatar.GetThumbnailUrl();
-				var texture = await Main.Instance.NetworkAPI.FetchTexture(thumbnailUrl);
+				var texture = await Main.NetworkAPI.FetchTexture(thumbnailUrl);
 
 				if (texture != null) {
 					_thumbnailImage.image = texture;

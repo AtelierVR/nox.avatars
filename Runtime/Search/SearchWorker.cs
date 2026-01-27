@@ -21,9 +21,9 @@ namespace Nox.Avatars.Runtime.Search {
 				return new SearchResult { Error = "Invalid server address." };
 			var data = await Main.Instance.Network.Search(
 				new SearchRequest {
-					query  = options.GetQuery(),
-					offset = options.GetPage() * options.GetLimit(),
-					limit  = options.GetLimit(),
+					query  = options.Query,
+					offset = options.Page * options.Limit,
+					limit  = options.Limit,
 				}, ServerAddress
 			);
 			if (data == null) return new SearchResult { Error = "Error fetching users." };

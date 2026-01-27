@@ -5,12 +5,12 @@ namespace Nox.Avatars.Runtime.Search {
 		private readonly IHandler _handler;
 
 		internal Search() {
-			_handler = Main.Instance.SearchAPI.Add(new SearchHandler());
+			_handler = Main.SearchAPI.Add(new SearchHandler());
 		}
 
 		internal void Dispose() {
 			if (_handler == null) return;
-			Main.Instance.SearchAPI.Remove(_handler.GetId());
+			Main.SearchAPI.Remove(_handler.GetId());
 		}
 	}
 }

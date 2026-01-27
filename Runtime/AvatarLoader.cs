@@ -46,7 +46,8 @@ namespace Nox.Avatars.Runtime {
             Logger.Log($"Loading avatar from cache: {hash}");
 
             var path = AvatarCache.GetIfExist(hash);
-            if (!string.IsNullOrEmpty(path)) return await LoadFromPath(path, arguments, progress, token);
+            if (!string.IsNullOrEmpty(path)) 
+                return await LoadFromPath(path, arguments, progress, token);
 
             Logger.LogError($"Avatar with hash {hash} not found in cache.");
 

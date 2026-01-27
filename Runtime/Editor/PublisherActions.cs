@@ -13,7 +13,7 @@ namespace Nox.Avatars.Runtime.Editor {
 	// Actions partial class - handles attach, publish, and upload operations
 	public partial class PublisherInstance {
 		private async UniTask CheckLoginStatus() {
-			var user = Main.Instance.UserAPI.GetCurrent();
+			var user = Main.UserAPI.GetCurrent();
 			var isLoggedIn = user != null && !string.IsNullOrEmpty(user.GetServerAddress());
 
 			if (!isLoggedIn) {
@@ -50,7 +50,7 @@ namespace Nox.Avatars.Runtime.Editor {
 
 			var server = _attachServerField?.value;
 			if (string.IsNullOrEmpty(server)) {
-				var user = Main.Instance.UserAPI.GetCurrent();
+				var user = Main.UserAPI.GetCurrent();
 				server = user?.GetServerAddress();
 			}
 
@@ -83,7 +83,7 @@ namespace Nox.Avatars.Runtime.Editor {
 			}
 
 			if (avatar != null) {
-				var user = Main.Instance.UserAPI.GetCurrent();
+				var user = Main.UserAPI.GetCurrent();
 				var isContributor = user != null && user.ToIdentifier().Equals(avatar.GetOwnerId());
 
 				if (!isContributor) {
@@ -257,11 +257,7 @@ namespace Nox.Avatars.Runtime.Editor {
 				ShowBuildProgress(0.77f, $"Calculating file hash for {sizeMb:F1} MB file...");
 
 				// Calculate file hash for validation
-				string fileHash = null;
-				using (var sha256 = System.Security.Cryptography.SHA256.Create()) {
-					var hashBytes = sha256.ComputeHash(await File.ReadAllBytesAsync(filePath));
-					fileHash = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
-				}
+				var fileHash = Hashing.HashFile(filePath);
 
 				Logger.Log($"File hash: {fileHash}");
 				ShowBuildProgress(0.78f, $"Preparing asset entry...");
@@ -396,7 +392,7 @@ namespace Nox.Avatars.Runtime.Editor {
 			} catch (Exception ex) {
 				HideBuildProgress();
 				ShowResultDialog(false, $"An error occurred: {ex.Message}");
-				Logger.LogException(new Exception("Failed to publish avatar", ex));
+				Logger.LogError(new Exception("Failed to publish avatar", ex));
 			}
 			finally {
 				CleanupTempPath(tempBuildPath);

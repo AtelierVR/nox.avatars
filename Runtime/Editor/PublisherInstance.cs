@@ -254,6 +254,7 @@ namespace Nox.Avatars.Runtime.Editor {
 		}
 
 		private void OnResultOKClicked(ClickEvent evt) {
+			AvatarDescriptorHelper.Find();
 			_resultContainer.style.display = DisplayStyle.None;
 			var avatar = AvatarDescriptorHelper.CurrentAvatar;
 			_publishButton?.SetEnabled(avatar && AvatarNotificationHelper.Allowed && _avatar != null);

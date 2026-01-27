@@ -14,8 +14,8 @@ namespace Nox.Avatars.Editor {
 		[InitializeOnLoadMethod]
 		private static void Initialize() {
 			Selection.selectionChanged         += OnSelectionChanged;
-			EditorApplication.hierarchyChanged += OnHierarchyChanged;
-			OnHierarchyChanged();
+			EditorApplication.hierarchyChanged += Find;
+			Find();
 		}
 
 		private static void OnSelectionChanged() {
@@ -27,7 +27,7 @@ namespace Nox.Avatars.Editor {
 				SetCurrentAvatar(avatarDescriptor);
 		}
 
-		private static void OnHierarchyChanged() {
+		public static void Find() {
 			try {
 				if (CurrentAvatar?.gameObject.activeInHierarchy ?? false) return;
 				var activeAvatars = Object.FindObjectsByType<AvatarDescriptor>(FindObjectsSortMode.None)

@@ -33,7 +33,7 @@ namespace Nox.Avatars.Runtime.Network {
 			if (ide.IsLocal())
 				ide = new AvatarIdentifier(ide.GetId(), ide.GetMetadata(), from);
 
-			var address = from ?? Main.Instance.UserAPI?.GetCurrent()?.GetServerAddress() ?? ide.GetServer();
+			var address = from ?? Main.UserAPI?.GetCurrent()?.GetServerAddress() ?? ide.GetServer();
 			if (string.IsNullOrEmpty(address)) {
 				Logger.LogError($"Cannot fetch avatar {identifier}: no server address provided.");
 				return null;
@@ -61,7 +61,7 @@ namespace Nox.Avatars.Runtime.Network {
 		}
 
 		public async UniTask<SearchResponse> Search(SearchRequest data, string from = null, CancellationToken cancellationToken = default) {
-			var address = from ?? Main.Instance.UserAPI?.GetCurrent()?.GetServerAddress();
+			var address = from ?? Main.UserAPI?.GetCurrent()?.GetServerAddress();
 			if (string.IsNullOrEmpty(address)) {
 				Logger.LogError("Cannot search avatars: no server address provided.");
 				return null;
@@ -124,7 +124,7 @@ namespace Nox.Avatars.Runtime.Network {
 			var ide = AvatarIdentifier.From(identifier);
 			if (ide.IsLocal())
 				ide = new AvatarIdentifier(ide.GetId(), ide.GetMetadata(), from);
-			var address = from ?? Main.Instance.UserAPI?.GetCurrent()?.GetServerAddress() ?? ide.GetServer();
+			var address = from ?? Main.UserAPI?.GetCurrent()?.GetServerAddress() ?? ide.GetServer();
 			if (string.IsNullOrEmpty(address)) {
 				Logger.LogError($"Cannot update avatar {identifier}: no server address provided.");
 				return null;
@@ -160,13 +160,10 @@ namespace Nox.Avatars.Runtime.Network {
 			=> await Delete(id.ToString(), from, cancellationToken);
 
 		public async UniTask<bool> Delete(string identifier, string from = null, CancellationToken cancellationToken = default) {
-			if (Main.Instance.NetworkAPI == null)
-				return false;
-
 			var ide = AvatarIdentifier.From(identifier);
 			if (ide.IsLocal())
 				ide = new AvatarIdentifier(ide.GetId(), ide.GetMetadata(), from);
-			var address = from ?? Main.Instance.UserAPI?.GetCurrent()?.GetServerAddress() ?? ide.GetServer();
+			var address = from ?? Main.UserAPI?.GetCurrent()?.GetServerAddress() ?? ide.GetServer();
 			if (string.IsNullOrEmpty(address)) {
 				Logger.LogError($"Cannot delete avatar {identifier}: no server address provided.");
 				return false;
@@ -200,7 +197,7 @@ namespace Nox.Avatars.Runtime.Network {
 			var ide = AvatarIdentifier.From(identifier);
 			if (ide.IsLocal())
 				ide = new AvatarIdentifier(ide.GetId(), ide.GetMetadata(), from);
-			var address = from ?? Main.Instance.UserAPI?.GetCurrent()?.GetServerAddress() ?? ide.GetServer();
+			var address = from ?? Main.UserAPI?.GetCurrent()?.GetServerAddress() ?? ide.GetServer();
 			if (string.IsNullOrEmpty(address)) {
 				Logger.LogError($"Cannot get assets for avatar {identifier}: no server address provided.");
 				return null;
@@ -234,7 +231,7 @@ namespace Nox.Avatars.Runtime.Network {
 			var ide = AvatarIdentifier.From(identifier);
 			if (ide.IsLocal())
 				ide = new AvatarIdentifier(ide.GetId(), ide.GetMetadata(), from);
-			var address = from ?? Main.Instance.UserAPI?.GetCurrent()?.GetServerAddress() ?? ide.GetServer();
+			var address = from ?? Main.UserAPI?.GetCurrent()?.GetServerAddress() ?? ide.GetServer();
 			if (string.IsNullOrEmpty(address)) {
 				Logger.LogError($"Cannot create asset for avatar {identifier}: no server address provided.");
 				return null;
@@ -276,7 +273,7 @@ namespace Nox.Avatars.Runtime.Network {
 			var ide = AvatarIdentifier.From(identifier);
 			if (ide.IsLocal())
 				ide = new AvatarIdentifier(ide.GetId(), ide.GetMetadata(), from);
-			var address = from ?? Main.Instance.UserAPI?.GetCurrent()?.GetServerAddress() ?? ide.GetServer();
+			var address = from ?? Main.UserAPI?.GetCurrent()?.GetServerAddress() ?? ide.GetServer();
 			if (string.IsNullOrEmpty(address)) {
 				Logger.LogError($"Cannot upload asset file for avatar {identifier}: no server address provided.");
 				return false;
@@ -349,7 +346,7 @@ namespace Nox.Avatars.Runtime.Network {
 			var ide = AvatarIdentifier.From(identifier);
 			if (ide.IsLocal())
 				ide = new AvatarIdentifier(ide.GetId(), ide.GetMetadata(), from);
-			var address = from ?? Main.Instance.UserAPI?.GetCurrent()?.GetServerAddress() ?? ide.GetServer();
+			var address = from ?? Main.UserAPI?.GetCurrent()?.GetServerAddress() ?? ide.GetServer();
 			if (string.IsNullOrEmpty(address)) {
 				Logger.LogError($"Cannot upload asset file for avatar {identifier}: no server address provided.");
 				return null;
@@ -410,7 +407,7 @@ namespace Nox.Avatars.Runtime.Network {
 			var ide = AvatarIdentifier.From(identifier);
 			if (ide.IsLocal())
 				ide = new AvatarIdentifier(ide.GetId(), ide.GetMetadata(), from);
-			var address = from ?? Main.Instance.UserAPI?.GetCurrent()?.GetServerAddress() ?? ide.GetServer();
+			var address = from ?? Main.UserAPI?.GetCurrent()?.GetServerAddress() ?? ide.GetServer();
 			if (string.IsNullOrEmpty(address)) {
 				Logger.LogError($"Cannot get asset status for avatar {identifier}: no server address provided.");
 				return null;
@@ -454,7 +451,7 @@ namespace Nox.Avatars.Runtime.Network {
 			if (ide.IsLocal())
 				ide = new AvatarIdentifier(ide.GetId(), ide.GetMetadata(), from);
 
-			var address = from ?? Main.Instance.UserAPI?.GetCurrent()?.GetServerAddress() ?? ide.GetServer();
+			var address = from ?? Main.UserAPI?.GetCurrent()?.GetServerAddress() ?? ide.GetServer();
 			if (string.IsNullOrEmpty(address)) {
 				Logger.LogError($"Cannot download asset file for avatar {identifier}: no server address provided.");
 				return null;
@@ -476,9 +473,7 @@ namespace Nox.Avatars.Runtime.Network {
 			if (onProgress != null)
 				request.HandleDownloadProgress((progress, _) => onProgress.Invoke(progress), cancellationToken);
 
-			await request.Send(cancellationToken);
-
-			if (!request.Ok()) {
+			if (!await request.Send(cancellationToken) || !request.Ok()) {
 				Logger.LogError($"Failed to download asset file for avatar {identifier} from {address}");
 				return null;
 			}
@@ -499,11 +494,7 @@ namespace Nox.Avatars.Runtime.Network {
 		}
 
 		public async UniTask<AvatarIdentifier[]> FetchFavorites(string from = null) {
-			if (Main.Instance.TableAPI == null)
-				return Array.Empty<AvatarIdentifier>();
-
-			var address = from ?? Main.Instance.UserAPI?.GetCurrent()?.GetServerAddress();
-
+			var address = from ?? Main.UserAPI?.GetCurrent()?.GetServerAddress();
 			if (string.IsNullOrEmpty(address)) {
 				Logger.LogError("Cannot fetch favorites: no server address provided.");
 				return Array.Empty<AvatarIdentifier>();
@@ -523,22 +514,17 @@ namespace Nox.Avatars.Runtime.Network {
 			return Array.Empty<AvatarIdentifier>();
 		}
 
-		public async UniTask<AvatarIdentifier[]> AddFavorite(string identifier, string from = null)
+		public async UniTask<AvatarIdentifier[]> AddFavorite(AvatarIdentifier identifier, string from = null)
 			=> await AddFavorites(new[] { identifier }, from);
 
-		public async UniTask<AvatarIdentifier[]> AddFavorites(string[] identifier, string from = null) {
-			if (Main.Instance.TableAPI == null)
-				return Array.Empty<AvatarIdentifier>();
-
-			var address = from ?? Main.Instance.UserAPI?.GetCurrent()?.GetServerAddress();
-
+		public async UniTask<AvatarIdentifier[]> AddFavorites(AvatarIdentifier[] identifier, string from = null) {
+			var address = from ?? Main.UserAPI?.GetCurrent()?.GetServerAddress();
 			if (string.IsNullOrEmpty(address)) {
 				Logger.LogError("Cannot add favorites: no server address provided.");
 				return Array.Empty<AvatarIdentifier>();
 			}
 
 			var e = await FetchFavorites(from);
-
 			var newE = identifier
 				.Select(AvatarIdentifier.From)
 				.Where(i => i != null && i.IsValid())
@@ -559,14 +545,11 @@ namespace Nox.Avatars.Runtime.Network {
 			return e;
 		}
 
-		public async UniTask<AvatarIdentifier[]> RemoveFavorite(string identifier, string from = null)
+		public async UniTask<AvatarIdentifier[]> RemoveFavorite(AvatarIdentifier identifier, string from = null)
 			=> await RemoveFavorites(new[] { identifier }, from);
 
-		public async UniTask<AvatarIdentifier[]> RemoveFavorites(string[] identifier, string from = null) {
-			if (Main.Instance.TableAPI == null)
-				return Array.Empty<AvatarIdentifier>();
-
-			var address = from ?? Main.Instance.UserAPI?.GetCurrent()?.GetServerAddress();
+		public async UniTask<AvatarIdentifier[]> RemoveFavorites(AvatarIdentifier[] identifier, string from = null) {
+			var address = from ?? Main.UserAPI?.GetCurrent()?.GetServerAddress();
 
 			if (string.IsNullOrEmpty(address)) {
 				Logger.LogError("Cannot remove favorites: no server address provided.");
@@ -576,7 +559,7 @@ namespace Nox.Avatars.Runtime.Network {
 			var e = await FetchFavorites(from);
 
 			var newE = e
-				.Where(i => !identifier.Contains(i.ToString()))
+				.Where(i => !identifier.Contains(i))
 				.ToArray();
 
 			var entry = await Main.Instance.TableAPI.Set(
