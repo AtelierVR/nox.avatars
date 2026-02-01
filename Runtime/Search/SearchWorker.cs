@@ -7,13 +7,10 @@ namespace Nox.Avatars.Runtime.Search {
 		public string Title;
 		public string ServerAddress;
 
-		public string GetTitleKey()
-			=> "avatar.search.worker.title";
-
-		public string[] GetTitleArguments()
+		public string[] TitleArguments
 			=> new[] { Title };
 
-		public float GetRatio()
+		public float Ratio
 			=> 4f / 3f;
 
 		public async UniTask<IResult> Fetch(IFetchOptions options) {

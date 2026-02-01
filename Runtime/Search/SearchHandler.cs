@@ -39,11 +39,14 @@ namespace Nox.Avatars.Runtime.Search {
 			var x1 = x0.ToObject<Dictionary<string, JObject>>();
 			var x2 = new List<IWorker>();
 			foreach (var (address, value) in x1) {
-				var title    = value["title"]?.ToString();
+				var title = value["title"]?.ToString();
 				var features = value["features"]?.Values<string>().ToArray() ?? Array.Empty<string>();
-				var search   = value["search"]?.ToObject<bool>()             ?? false;
+				var search = value["search"]?.ToObject<bool>() ?? false;
 				if (!(search && features.Contains("avatar"))) continue;
-				x2.Add(new SearchWorker { Title = title, ServerAddress = address });
+				x2.Add(new SearchWorker {
+					Title = title,
+					ServerAddress = address
+				});
 			}
 
 			return x2.ToArray();
