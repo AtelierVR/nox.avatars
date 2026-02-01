@@ -29,7 +29,8 @@ namespace Nox.Avatars.Editor {
 
 		public static void Find() {
 			try {
-				if (CurrentAvatar?.gameObject.activeInHierarchy ?? false) return;
+				// Vérifier si CurrentAvatar est null, Missing ou valide et actif
+				if (CurrentAvatar && CurrentAvatar && CurrentAvatar.gameObject.activeInHierarchy) return;
 				var activeAvatars = Object.FindObjectsByType<AvatarDescriptor>(FindObjectsSortMode.None)
 					.Where(avatar => avatar.gameObject.activeInHierarchy)
 					.ToArray();
