@@ -3,63 +3,68 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using Nox.AssetBundles;
+using Nox.CCK.AssetBundles;
 using Nox.CCK.Avatars;
+using Nox.CCK.Utils;
 using UnityEngine;
 using Logger = Nox.CCK.Utils.Logger;
 using Object = UnityEngine.Object;
 
-namespace Nox.Avatars.Runtime {
-	public class AssetBundleRuntimeAvatar : BaseRuntimeAvatar {
-		public AssetBundle Bundle;
-		public string      Path;
+namespace Nox.Avatars.Runtime
+{
+	public class AssetBundleRuntimeAvatar : BaseRuntimeAvatar
+	{
+		public IAsset Bundle;
+		public string Path;
+		public string CacheId;
 
-		public bool CanUnloadAssetBundle() {
-			foreach (var a0 in AvatarLoader.Avatar)
-				if (a0 is AssetBundleRuntimeAvatar a1 && a1.Path == Path && a1.GetId() != GetId())
-					return false;
-			return true;
-		}
-
-		private static AssetBundle GetAssetBundle(string path) {
-			foreach (var a0 in AvatarLoader.Avatar)
-				if (a0 is AssetBundleRuntimeAvatar a1 && a1.Path == path)
-					return a1.Bundle;
-			return null;
-		}
-
-
-		public static async UniTask<AssetBundleRuntimeAvatar> Load(string path, Dictionary<string, object> arguments, Action<float> progress, CancellationToken token) {
+		public static async UniTask<AssetBundleRuntimeAvatar> Load(string path, Dictionary<string, object> arguments, Action<float> progress, CancellationToken token)
+		{
 			progress?.Invoke(0);
 
-			var avatar = new AssetBundleRuntimeAvatar {
-				Path   = path,
-				Bundle = GetAssetBundle(path)
+			var avatar = new AssetBundleRuntimeAvatar
+			{
+				Path = path,
+				CacheId = nameof(AssetBundleRuntimeAvatar) + "_" + Guid.NewGuid()
 			};
 
-			avatar.Bundle ??= await AssetBundle.LoadFromFileAsync(path)
-				.ToUniTask(progress: new Progress<float>(p => progress?.Invoke(p * .25f)), cancellationToken: token);
+			try
+			{
+				avatar.Bundle = await GlobalAssetBundleManager.LoadFileAsync(
+					path,
+					avatar.CacheId,
+					new Progress<float>(p => progress?.Invoke(p * .25f))
+				);
 
-			progress?.Invoke(.25f);
-
-			if (!avatar.Bundle) {
-				Logger.LogError($"Failed to load avatar from path: {path}");
+				progress?.Invoke(.25f);
+			}
+			catch (Exception ex)
+			{
+				Logger.LogError(new Exception($"Exception while loading AssetBundle from path: {path}", ex));
 				return null;
 			}
 
-			foreach (var asset in avatar.Bundle.GetAllAssetNames())
+			foreach (var asset in avatar.Bundle.AssetBundle.GetAllAssetNames())
 				Logger.LogDebug($"Bundle Asset: {asset}");
 
-
 			// Load the avatar from the bundle (prefab)
-			var obj = await avatar.Bundle.LoadAssetAsync<GameObject>("Avatar")
-				.ToUniTask(
-					progress: new Progress<float>(p => progress?.Invoke(.25f + p * .5f)),
-					cancellationToken: token
-				);
+
+			var assetRequest = avatar.Bundle.AssetBundle.LoadAssetAsync<GameObject>("Avatar");
+
+			// Yield périodique pendant le chargement pour ne pas bloquer
+			while (!assetRequest.isDone)
+			{
+				progress?.Invoke(.25f + assetRequest.progress * .5f);
+				await UniTask.Yield();
+			}
+
+			var obj = assetRequest.asset;
 
 			var prefab = obj as GameObject;
 
-			if (!prefab) {
+			if (!prefab)
+			{
 				Logger.LogError($"No prefab found in avatar bundle: {path}");
 				await avatar.Dispose();
 				return null;
@@ -67,25 +72,30 @@ namespace Nox.Avatars.Runtime {
 
 			prefab.SetActive(false);
 
-			avatar.Root = (await Object.InstantiateAsync(prefab)
-					.ToUniTask(
-						progress: new Progress<float>(p => progress?.Invoke(.75f + p * .25f)),
-						cancellationToken: token
-					)
-				).FirstOrDefault();
+			var instantiateOp = Object.InstantiateAsync(prefab);
 
-			if (!avatar.Root) {
+			// Yield périodique pendant l'instantiation
+			while (!instantiateOp.isDone)
+			{
+				progress?.Invoke(.75f + instantiateOp.progress * .25f);
+				await UniTask.Yield();
+			}
+
+			avatar.Root = instantiateOp.Result.FirstOrDefault();
+
+			if (!avatar.Root)
+			{
 				Logger.LogError($"Failed to instantiate avatar prefab from bundle: {path}");
 				await avatar.Dispose();
 				return null;
 			}
 
-
-			avatar.Id         = avatar.Root.GetInstanceID().ToString();
-			avatar.Root.name  = $"[{avatar.GetType().Name}_{avatar.GetId()}]";
+			avatar.Id = avatar.Root.GetInstanceID().ToString();
+			avatar.Root.name = $"[{avatar.GetType().Name}_{avatar.GetId()}]";
 			avatar.Descriptor = avatar.Root.GetComponent<IAvatarDescriptor>();
 
-			if (avatar.Descriptor == null) {
+			if (avatar.Descriptor == null)
+			{
 				Logger.LogError($"Avatar prefab does not have a valid descriptor: {path}");
 				await avatar.Dispose();
 				return null;
@@ -97,7 +107,8 @@ namespace Nox.Avatars.Runtime {
 				token: token
 			);
 
-			if (!result) {
+			if (!result)
+			{
 				Logger.LogError($"Failed to prepare avatar: {path}");
 				await avatar.Dispose();
 				return null;
@@ -107,18 +118,18 @@ namespace Nox.Avatars.Runtime {
 			return avatar;
 		}
 
-		public override async UniTask Dispose() {
-			if (Root) {
-				Object.Destroy(Root);
+		public override UniTask Dispose()
+		{
+			if (Root)
+			{
+				Root.Destroy();
 				Root = null;
 			}
 
-			if (Bundle && CanUnloadAssetBundle()) {
-				await Bundle.UnloadAsync(true);
-				Bundle = null;
-			}
+			GlobalAssetBundleManager.DetachFile(Path, CacheId);
+			Bundle = null;
 
-			Descriptor = null;
+			return UniTask.CompletedTask;
 		}
 	}
 }

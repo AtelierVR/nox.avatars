@@ -22,7 +22,9 @@
     "Nox.Editor.Panel",
     "Nox.Avatars.Editor",
     "Nox.Controllers",
-    "Nox.CCK.Network"
+    "Nox.CCK.Network",
+    "Nox.CCK.AssetBundles",
+    "Nox.AssetBundles"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],
