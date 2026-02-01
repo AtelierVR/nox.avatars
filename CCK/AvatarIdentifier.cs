@@ -7,17 +7,20 @@ namespace Nox.CCK.Avatars {
 	/// Implementation of IAvatarIdentifier
 	/// </summary>
 	public class AvatarIdentifier : IAvatarIdentifier {
-		public const uint   InvalidId   = 0;
-		public const string LocalServer = "::";
-		public const ushort Latest      = ushort.MaxValue;
 
-		private readonly uint                         _id;
-		private readonly string                       _server;
+		public static readonly AvatarIdentifier Invalid = new AvatarIdentifier(InvalidId);
+
+		public const uint InvalidId = 0;
+		public const string LocalServer = "::";
+		public const ushort Latest = ushort.MaxValue;
+
+		private readonly uint _id;
+		private readonly string _server;
 		private readonly Dictionary<string, string[]> _metadata;
 
 		public AvatarIdentifier(uint id, Dictionary<string, string[]> meta = null, string server = LocalServer) {
-			_id       = id;
-			_server   = server;
+			_id = id;
+			_server = server;
 			_metadata = meta ?? new Dictionary<string, string[]>();
 		}
 
@@ -115,7 +118,7 @@ namespace Nox.CCK.Avatars {
 				var metaSplit = part.Split('=');
 				if (metaSplit.Length < 1)
 					continue;
-				var key   = metaSplit[0];
+				var key = metaSplit[0];
 				var value = metaSplit.Length > 1 ? string.Join("=", metaSplit, 1, metaSplit.Length - 1) : null;
 				if (string.IsNullOrEmpty(key))
 					continue;
@@ -124,7 +127,8 @@ namespace Nox.CCK.Avatars {
 					values.CopyTo(newValues, 0);
 					newValues[^1] = value;
 					metadata[key] = newValues;
-				} else metadata[key] = new[] { value };
+				}
+				else metadata[key] = new[] { value };
 			}
 
 			return new AvatarIdentifier(id, metadata, parts[1]);
