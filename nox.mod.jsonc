@@ -46,7 +46,7 @@
       "version": ">=1.0.0"
     },
     {
-      "id": "user",
+      "id": "users",
       "type": "depends",
       "version": ">=1.0.0"
     },

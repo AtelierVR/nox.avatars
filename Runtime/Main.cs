@@ -43,7 +43,7 @@ namespace Nox.Avatars.Runtime
 
         public static IUserAPI UserAPI
             => Instance.CoreAPI.ModAPI
-                       .GetMod("user")
+                       .GetMod("users")
                        ?.GetInstance<IUserAPI>();
 
         internal ITableAPI TableAPI
