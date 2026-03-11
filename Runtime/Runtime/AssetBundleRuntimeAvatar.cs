@@ -72,16 +72,10 @@ namespace Nox.Avatars.Runtime
 
 			prefab.SetActive(false);
 
-			var instantiateOp = Object.InstantiateAsync(prefab);
-
-			// Yield périodique pendant l'instantiation
-			while (!instantiateOp.isDone)
-			{
-				progress?.Invoke(.75f + instantiateOp.progress * .25f);
-				await UniTask.Yield();
-			}
-
-			avatar.Root = instantiateOp.Result.FirstOrDefault();
+			avatar.Root = await prefab.InstantiateAsync(
+				progress: new Progress<float>(p => progress?.Invoke(.75f + p * .25f)),
+				cancellationToken: token
+			);;
 
 			if (!avatar.Root)
 			{

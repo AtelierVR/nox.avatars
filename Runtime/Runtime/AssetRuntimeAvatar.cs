@@ -35,9 +35,10 @@ namespace Nox.Avatars.Runtime {
 
 			progress?.Invoke(.1f);
 
-			avatar.Root = (await Object.InstantiateAsync(prefab)
-					.ToUniTask(progress: new Progress<float>(p => progress?.Invoke(.1f + p * .75f)), cancellationToken: token))
-				.FirstOrDefault();
+			avatar.Root = await prefab.InstantiateAsync(
+				progress: new Progress<float>(p => progress?.Invoke(.1f + p * .75f)),
+				cancellationToken: token
+			);
 
 			if (!avatar.Root) {
 				Logger.LogError($"Failed to instantiate avatar prefab from bundle: {path}");
