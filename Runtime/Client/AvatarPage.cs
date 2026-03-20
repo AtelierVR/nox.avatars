@@ -63,7 +63,7 @@ namespace Nox.Avatars.Runtime.client {
 
 		private static AvatarPage OnPageByIdentifier(IMenu menu, object[] context, AvatarIdentifier identifier) {
 			var page = new AvatarPage {
-				MId         = menu.GetId(),
+				MId         = menu.Id,
 				_context    = context,
 				_identifier = identifier,
 				Avatar      = null,
@@ -76,7 +76,7 @@ namespace Nox.Avatars.Runtime.client {
 
 		private static AvatarPage OnPageByAvatar(IMenu menu, object[] context, IAvatar avatar, IAvatarAsset asset) {
 			var page = new AvatarPage {
-				MId         = menu.GetId(),
+				MId         = menu.Id,
 				_context    = context,
 				_identifier = avatar.GetIdentifier(),
 				Avatar      = avatar,

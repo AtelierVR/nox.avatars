@@ -45,7 +45,7 @@ namespace Nox.Avatars.Runtime {
             IPage page = null;
             if (AvatarPage.GetStaticKey() == key) page = AvatarPage.OnGotoAction(menu, context.Data[2..]);
             if (page == null) return;
-            Main.Instance.CoreAPI.EventAPI.Emit("menu_display", menu.GetId(), page);
+            Main.Instance.CoreAPI.EventAPI.Emit("menu_display", menu.Id, page);
         }
 
         private void OnWidgetRequest(EventData context) {
