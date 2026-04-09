@@ -1,32 +1,30 @@
 using System;
 using System.Linq;
 using Cysharp.Threading.Tasks;
-using Nox.Avatars;
 using Nox.CCK.Avatars;
 using Nox.CCK.Mods.Events;
 using Nox.CCK.Utils;
 using Nox.UI;
-using Nox.Users;
 using UnityEngine;
 using Logger = Nox.CCK.Utils.Logger;
 
 namespace Nox.Avatars.Runtime.client {
 	public class AvatarPage : IPage {
-		internal static string GetStaticKey()
+		static internal string GetStaticKey()
 			=> "avatar";
 
 		public string GetKey()
 			=> GetStaticKey();
 
-		internal int               MId;
-		private  object[]          _context;
-		private  GameObject        _content;
-		private  AvatarComponent   _component;
-		private  IAvatarIdentifier _identifier;
-		public   IAvatar           Avatar;
-		public   IAvatarAsset      Asset;
-		public   ushort            Version = ushort.MaxValue;
-		private  bool              _isLoading;
+		internal int MId;
+		private object[] _context;
+		private GameObject _content;
+		private AvatarComponent _component;
+		private Identifier _identifier;
+		public IAvatar Avatar;
+		public IAvatarAsset Asset;
+		public ushort Version = ushort.MaxValue;
+		private bool _isLoading;
 
 		private EventSubscription[] _events = Array.Empty<EventSubscription>();
 
@@ -44,15 +42,16 @@ namespace Nox.Avatars.Runtime.client {
 		}
 
 
-		internal static IPage OnGotoAction(IMenu menu, object[] context) {
-			if (!T(context, 0, out string type)) return null;
+		static internal IPage OnGotoAction(IMenu menu, object[] context) {
+			if (!T(context, 0, out string type))
+				return null;
 			switch (type) {
 				case "id_server" when T(context, 1, out uint id0) && T(context, 2, out string ser0):
-					return OnPageByIdentifier(menu, context, new AvatarIdentifier(id0, null, ser0));
+					return OnPageByIdentifier(menu, context, new Identifier("a", id0, null, ser0));
 				case "identifier" when T(context, 1, out string id2):
-					return OnPageByIdentifier(menu, context, AvatarIdentifier.From(id2));
-				case "identifier" when T(context, 1, out IAvatarIdentifier ai0):
-					return OnPageByIdentifier(menu, context, AvatarIdentifier.From(ai0));
+					return OnPageByIdentifier(menu, context, Identifier.Parse(id2));
+				case "identifier" when T(context, 1, out Identifier ai0):
+					return OnPageByIdentifier(menu, context, ai0);
 				case "avatar" when T(context, 1, out IAvatar a0):
 					var asset0 = T(context, 2, out IAvatarAsset avatarAsset) ? avatarAsset : null;
 					return OnPageByAvatar(menu, context, a0, asset0);
@@ -61,7 +60,7 @@ namespace Nox.Avatars.Runtime.client {
 			return null;
 		}
 
-		private static AvatarPage OnPageByIdentifier(IMenu menu, object[] context, AvatarIdentifier identifier) {
+		private static AvatarPage OnPageByIdentifier(IMenu menu, object[] context, Identifier identifier) {
 			var page = new AvatarPage {
 				MId         = menu.Id,
 				_context    = context,
@@ -78,10 +77,10 @@ namespace Nox.Avatars.Runtime.client {
 			var page = new AvatarPage {
 				MId         = menu.Id,
 				_context    = context,
-				_identifier = avatar.GetIdentifier(),
+				_identifier = avatar.Identifier,
 				Avatar      = avatar,
 				Asset       = asset,
-				Version     = avatar.GetIdentifier().GetVersion()
+				Version     = avatar.Identifier.GetVersion()
 			};
 			if (page.Asset == null)
 				page.FetchAsset(false).Forget();
@@ -89,7 +88,8 @@ namespace Nox.Avatars.Runtime.client {
 		}
 
 		private async UniTask Refresh(bool load) {
-			if (_isLoading) return;
+			if (_isLoading)
+				return;
 			await FetchAvatar();
 			await FetchAsset();
 			_component.UpdateContent(Avatar, Asset);
@@ -97,15 +97,18 @@ namespace Nox.Avatars.Runtime.client {
 		}
 
 		private async UniTask FetchAvatar(bool update = false) {
-			if (_isLoading) return;
+			if (_isLoading)
+				return;
 			_isLoading = true;
 			Avatar     = await Main.Instance.Network.Fetch(_identifier.ToString());
 			_isLoading = false;
-			if (update) _component.UpdateContent(Avatar, Asset);
+			if (update)
+				_component.UpdateContent(Avatar, Asset);
 		}
 
 		private async UniTask FetchAsset(bool update = false) {
-			if (_isLoading) return;
+			if (_isLoading)
+				return;
 			_isLoading = true;
 			var searchResult = await Main.Instance.Network.SearchAssets(
 				_identifier.ToString(),
@@ -116,9 +119,10 @@ namespace Nox.Avatars.Runtime.client {
 					Platforms = new[] { PlatformExtensions.CurrentPlatform.GetPlatformName() }
 				}
 			);
-			Asset      = searchResult?.GetAssets()?.FirstOrDefault();
+			Asset      = searchResult?.Items?.FirstOrDefault();
 			_isLoading = false;
-			if (update) _component.UpdateContent(Avatar, Asset);
+			if (update)
+				_component.UpdateContent(Avatar, Asset);
 		}
 
 		public void RemoveDownload() {
@@ -127,8 +131,8 @@ namespace Nox.Avatars.Runtime.client {
 				return;
 			}
 
-			Main.Instance.RemoveFromCache(Asset.GetHash());
-			Logger.Log($"Removed asset from cache: {Asset.GetHash()}");
+			Main.Instance.RemoveFromCache(Asset.Hash);
+			Logger.Log($"Removed asset from cache: {Asset.Hash}");
 		}
 
 		public void CancelDownload()
@@ -146,7 +150,7 @@ namespace Nox.Avatars.Runtime.client {
 			}
 
 			var cache = Main.Instance
-				.DownloadToCache(Asset.GetUrl(), Asset.GetHash());
+				.DownloadToCache(Asset.Url, Asset.Hash);
 
 			cache.Start().Forget();
 		}
@@ -158,7 +162,8 @@ namespace Nox.Avatars.Runtime.client {
 			=> Client.UiAPI.Get<IMenu>(MId);
 
 		public GameObject GetContent(RectTransform parent) {
-			if (_content) return _content;
+			if (_content)
+				return _content;
 			(_content, _component) = AvatarComponent.Generate(this, parent);
 			_component.UpdateLoading();
 			return _content;
@@ -183,9 +188,12 @@ namespace Nox.Avatars.Runtime.client {
 			=> _component.UpdateDownloading(IsDownloading());
 
 		public void OnDisplay(IPage lastPage) {
-			if (Avatar != null) _component.UpdateContent(Avatar, Asset);
-			else if (_isLoading) _component.UpdateLoading();
-			else _component.UpdateError("Avatar not found or loading failed.");
+			if (Avatar != null)
+				_component.UpdateContent(Avatar, Asset);
+			else if (_isLoading)
+				_component.UpdateLoading();
+			else
+				_component.UpdateError("Avatar not found or loading failed.");
 		}
 
 		public void OnRemove() {
@@ -195,16 +203,17 @@ namespace Nox.Avatars.Runtime.client {
 		}
 
 		public bool InCache()
-			=> Asset != null && Main.Instance.HasInCache(Asset.GetHash());
+			=> Asset != null && Main.Instance.HasInCache(Asset.Hash);
 
 		private Caching.Cache GetDownload()
 			=> Asset != null
-				? Main.Instance.Cache.GetDownload(Asset.GetUrl(), Asset.GetHash())
+				? Main.Instance.Cache.GetDownload(Asset.Url, Asset.Hash)
 				: null;
 
 		public (bool, float) IsDownloading() {
 			var cache = GetDownload();
-			if (cache == null) return (false, 0f);
+			if (cache == null)
+				return (false, 0f);
 			return cache.IsRunning()
 				? (true, cache.GetProgress())
 				: (false, 1f);

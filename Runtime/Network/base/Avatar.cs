@@ -1,53 +1,52 @@
 using System;
-using Nox.Avatars;
-using Nox.CCK.Avatars;
-using Nox.CCK.Utils;
+using Newtonsoft.Json;
+using Nox.CCK.Convertors;
+using Identifier = Nox.CCK.Utils.Identifier;
 
 namespace Nox.Avatars.Runtime.Network {
 	// ReSharper disable InconsistentNaming
 	[Serializable]
-	public class Avatar : IAvatar, INoxObject {
-		public uint     id;
-		public string   title;
-		public string   description;
-		public string   thumbnail;
-		public string[] tags;
-		public string   owner;
-		public string   server;
-		public ulong    created_at;
-		public ulong    updated_at;
+	public class Avatar : IAvatar {
+		[JsonProperty("id")]
+		public uint Id { get; private set; }
 
-		public uint GetId()
-			=> id;
+		[JsonProperty("title")]
+		public string Title { get; private set; }
 
-		public string GetTitle()
-			=> title;
+		[JsonProperty("description")]
+		public string Description { get; private set; }
 
-		public string GetServerAddress()
-			=> server;
+		[JsonProperty("thumbnail")]
+		public string Thumbnail { get; private set; }
 
-		public string GetDescription()
-			=> description;
+		[JsonProperty("tags")]
+		public string[] Tags { get; private set; }
 
-		public string GetThumbnailUrl()
-			=> thumbnail;
+		[JsonProperty("owner"), JsonConverter(typeof(StringToIdentifierConverter))]
+		public Identifier Owner { get; private set; }
 
-		public string[] GetTags()
-			=> tags ??= Array.Empty<string>();
+		[JsonProperty("server")]
+		public string Server { get; private set; }
 
-		public string GetOwnerId()
-			=> owner;
+		[JsonProperty("release")]
+		public int Release { get; private set; }
 
-		public DateTime GetCreatedAt()
-			=> DateTimeOffset.FromUnixTimeMilliseconds((long)created_at).UtcDateTime;
+		[JsonProperty("created_at"), JsonConverter(typeof(UnixTimestampToDateTimeConverter))]
+		public DateTime CreatedAt { get; private set; }
 
-		public DateTime GetUpdatedAt()
-			=> DateTimeOffset.FromUnixTimeMilliseconds((long)updated_at).UtcDateTime;
+		public Identifier Identifier
+			=> new("a", Id, null, Server);
 
-		public string GetServer()
-			=> server;
+		private class UnixTimestampToDateTimeConverter : JsonConverter<DateTime> {
+			public override void WriteJson(JsonWriter writer, DateTime value, JsonSerializer serializer)
+				=> writer.WriteValue(new DateTimeOffset(value).ToUnixTimeMilliseconds());
 
-		public IAvatarIdentifier GetIdentifier()
-			=> new AvatarIdentifier(id, null, server);
+			public override DateTime ReadJson(JsonReader reader, Type objectType, DateTime existingValue, bool hasExistingValue, JsonSerializer serializer)
+				=> reader.TokenType switch {
+					JsonToken.Integer => DateTimeOffset.FromUnixTimeMilliseconds((long)reader.Value!).UtcDateTime,
+					JsonToken.Float   => DateTimeOffset.FromUnixTimeMilliseconds((long)(double)reader.Value!).UtcDateTime,
+					_                 => throw new JsonSerializationException("Invalid token type for DateTime")
+				};
+		}
 	}
 }

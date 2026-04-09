@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
+using Nox.CCK.Utils;
 
 namespace Nox.Avatars.Controllers {
 	public interface IControllerAvatar {
@@ -16,7 +17,7 @@ namespace Nox.Avatars.Controllers {
 		/// </summary>
 		/// <param name="identifier"></param>
 		/// <param name="progress"></param>
-		public UniTask<IRuntimeAvatar> SetAvatar(IAvatarIdentifier identifier, Action<string, float> progress = null);
+		public UniTask<IRuntimeAvatar> SetAvatar(Identifier identifier, Action<string, float> progress = null);
 
 		/// <summary>
 		/// Set the current avatar directly.

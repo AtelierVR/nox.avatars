@@ -4,6 +4,7 @@ using Cysharp.Threading.Tasks;
 using Nox.Avatars.Parameters;
 using Nox.CCK.Avatars;
 using Nox.CCK.Build;
+using Nox.CCK.Utils;
 using UnityEngine;
 using UnityEngine.Animations.Rigging;
 using Logger = Nox.CCK.Utils.Logger;
@@ -11,25 +12,20 @@ using Logger = Nox.CCK.Utils.Logger;
 namespace Nox.Avatars.Editor {
 	[RequireComponent(typeof(IAvatarDescriptor))]
 	public class PlayModeAvatar : MonoBehaviour, IRuntimeAvatar, IRemoveOnBuild {
-		public string GetId()
-			=> GetInstanceID().ToString();
+		public string Id
+			=> GetEntityId().GetHashCode().ToString();
 
-		public Dictionary<string, object> GetArguments()
+		public Dictionary<string, object> Arguments
 			=> new() {
 				["source"] = this,
 				["local"]  = true
 			};
 
 		// ReSharper disable Unity.PerformanceAnalysis
-		public IAvatarDescriptor GetDescriptor()
+		public IAvatarDescriptor Descriptor
 			=> GetComponent<IAvatarDescriptor>();
 
-		public IAvatarIdentifier GetIdentifier()
-			=> null;
-
-		public void SetIdentifier(IAvatarIdentifier identifier)
-			=> Logger.LogWarning("PlayModeAvatar does not support setting an identifier.");
-
+		public Identifier Identifier { get; set; } = Identifier.Invalid;
 
 		public async UniTask Dispose()
 			=> await UniTask.Yield();

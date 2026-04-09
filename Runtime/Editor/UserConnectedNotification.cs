@@ -35,8 +35,8 @@ namespace Nox.Avatars.Runtime.Editor {
 				NotificationType.Info,
 				new[] {
 					"avatar.editor.notification.user_connected",
-					user.GetDisplay(),
-					user.ToIdentifier().ToString()
+					user.Display,
+					user.Identifier.ToString()
 				}
 			);
 			AvatarNotificationHelper.Add(notification);

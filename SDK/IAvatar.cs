@@ -1,27 +1,59 @@
 using System;
+using Nox.CCK.Utils;
+using Nox.Users;
 
 namespace Nox.Avatars {
 	public interface IAvatar {
-		public uint GetId();
+		/// <summary>
+		/// The unique id of the avatar.
+		/// </summary>
+		public uint Id { get; }
 
-		public string GetTitle();
+		/// <summary>
+		/// The title of the avatar.
+		/// </summary>
+		public string Title { get; }
 
-		public string GetServerAddress();
+		/// <summary>
+		/// The owner of the avatar.
+		/// </summary>
+		Identifier Owner { get; }
 
-		public string GetDescription();
+		/// <summary>
+		/// The server where the avatar is hosted.
+		/// </summary>
+		public string Server { get; }
 
-		public string GetThumbnailUrl();
+		/// <summary>
+		/// The description of the avatar.
+		/// </summary>
+		public string Description { get; }
 
-		public string[] GetTags();
+		/// <summary>
+		/// The thumbnail of the avatar.
+		/// </summary>
+		public string Thumbnail { get; }
 
-		public string GetOwnerId();
+		/// <summary>
+		/// The tags of the avatar.
+		/// </summary>
+		public string[] Tags { get; }
+		
+		/// <summary>
+		/// Is a <see cref="ushort"/> of the <see cref="IAvatarAsset.Version"/>.
+		/// It can be -1, when the avatar has no assets.
+		/// </summary>
+		public int Release { get; }
 
-		public DateTime GetCreatedAt();
+		/// <summary>
+		/// The date and time when the avatar was created.
+		/// </summary>
+		public DateTime CreatedAt { get; }
 
-		public DateTime GetUpdatedAt();
-
-		public string GetServer();
-
-		public IAvatarIdentifier GetIdentifier();
+		/// <summary>
+		/// The unique identifier of the avatar,
+		/// which can be used to fetch its assets.
+		/// </summary>
+		public Identifier Identifier { get; }
 	}
 }

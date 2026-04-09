@@ -58,25 +58,25 @@ namespace Nox.Avatars {
 		/// <returns></returns>
 		public UniTask<IRuntimeAvatar> LoadFromCache(string hash, Dictionary<string, object> arguments = null, Action<float> progress = null, CancellationToken token = default);
 
-		public UniTask<IAvatar> Fetch(IAvatarIdentifier identifier, string from = null);
+		public UniTask<IAvatar> Fetch(Identifier identifier, string from = null);
 
 		public UniTask<ISearchResponse> Search(ISearchRequest data, string from = null);
 
 		public UniTask<IAvatar> Create(ICreateAvatarRequest data, string server);
 
-		public UniTask<IAvatar> Update(IAvatarIdentifier identifier, IUpdateAvatarRequest form, string from = null);
+		public UniTask<IAvatar> Update(Identifier identifier, IUpdateAvatarRequest form, string from = null);
 
-		public UniTask<bool> Delete(IAvatarIdentifier identifier, string from = null);
+		public UniTask<bool> Delete(Identifier identifier, string from = null);
 
-		public UniTask<IAssetSearchResponse> SearchAssets(IAvatarIdentifier identifier, IAssetSearchRequest data, string from = null);
+		public UniTask<IAssetSearchResponse> SearchAssets(Identifier identifier, IAssetSearchRequest data, string from = null);
 
-		public UniTask<bool> UploadThumbnail(IAvatarIdentifier identifier, Texture2D texture, string from = null, Action<float> onProgress = null);
+		public UniTask<bool> UploadThumbnail(Identifier identifier, Texture2D texture, string from = null, Action<float> onProgress = null);
 
-		public UniTask<IUploadAssetResponse> UploadAssetFile(IAvatarIdentifier identifier, uint assetId, string filePath, string fileHash = null, string from = null, Action<float> onProgress = null);
+		public UniTask<IUploadAssetResponse> UploadAssetFile(Identifier identifier, uint assetId, string filePath, string fileHash = null, string from = null, Action<float> onProgress = null);
 
-		public UniTask<IAssetStatusResponse> GetAssetStatus(IAvatarIdentifier identifier, uint assetId, string from = null);
+		public UniTask<IAssetStatusResponse> GetAssetStatus(Identifier identifier, uint assetId, string from = null);
 
-		public UniTask<IAvatarAsset> CreateAsset(IAvatarIdentifier identifier, ICreateAssetRequest data, string from = null);
+		public UniTask<IAvatarAsset> CreateAsset(Identifier identifier, ICreateAssetRequest data, string from = null);
 
 		public ICaching DownloadToCache(string url, string hash = null, string from = null, UnityAction<float> progress = null, CancellationToken token = default);
 
@@ -84,10 +84,10 @@ namespace Nox.Avatars {
 
 		public bool HasInCache(string hash);
 
-		public UniTask<IAvatarIdentifier[]> AddFavorite(IAvatarIdentifier identifier, string from = null);
+		public UniTask<IFavorites> AddFavorite(Identifier identifier);
 
-		public UniTask<IAvatarIdentifier[]> RemoveFavorite(IAvatarIdentifier identifier, string from = null);
+		public UniTask<IFavorites> RemoveFavorite(Identifier identifier);
 
-		public UniTask<IAvatarIdentifier[]> GetFavorites(string from = null);
+		public UniTask<IFavorites> GetFavorites();
 	}
 }

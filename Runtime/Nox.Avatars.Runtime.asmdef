@@ -24,7 +24,8 @@
     "Nox.Controllers",
     "Nox.CCK.Network",
     "Nox.CCK.AssetBundles",
-    "Nox.AssetBundles"
+    "Nox.AssetBundles",
+    "Nox.CCK.Users"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

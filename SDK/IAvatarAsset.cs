@@ -1,20 +1,21 @@
 namespace Nox.Avatars {
 	public interface IAvatarAsset {
-		public uint GetId();
+		public uint Id { get; }
 
-		public ushort GetVersion();
+		public ushort Version { get; }
 
-		public string GetEngine();
+		public string Engine { get; }
 
-		public string GetPlatform();
+		public string Platform { get; }
 
-		public bool IsEmpty();
+		public bool IsEmpty { get; }
 
-		public string GetUrl();
+		public string Url { get; }
 
-		public string[] GetFeatures();
+		public string[] Features { get; }
 
-	public string GetHash(); 
-	public long GetSize();
-}
+		public string Hash { get; }
+
+		public long Size { get; }
+	}
 }

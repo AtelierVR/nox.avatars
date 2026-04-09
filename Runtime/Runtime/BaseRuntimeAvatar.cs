@@ -1,30 +1,19 @@
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
-using Nox.Avatars;
+using Nox.CCK.Utils;
 using UnityEngine;
 
 namespace Nox.Avatars.Runtime {
 	public abstract class BaseRuntimeAvatar : IRuntimeAvatar {
-		public IAvatarDescriptor          Descriptor;
-		public IAvatarIdentifier          Identifier;
-		public string                     Id;
-		public GameObject                 Root;
-		public Dictionary<string, object> Arguments;
+		protected GameObject Root;
 
-		public virtual string GetId()
-			=> Id;
+		public virtual string Id { get; internal set; } = null;
 
-		public Dictionary<string, object> GetArguments()
-			=> Arguments ??= new Dictionary<string, object>();
+		public Dictionary<string, object> Arguments { get; internal set; } = new();
 
-		public virtual IAvatarDescriptor GetDescriptor()
-			=> Descriptor;
+		public virtual IAvatarDescriptor Descriptor { get; internal set; }
 
-		public IAvatarIdentifier GetIdentifier()
-			=> Identifier;
-
-		public void SetIdentifier(IAvatarIdentifier identifier)
-			=> Identifier = identifier;
+		public Identifier Identifier { get; set; } = Identifier.Invalid;
 
 		public abstract UniTask Dispose();
 	}

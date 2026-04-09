@@ -41,9 +41,8 @@ namespace Nox.Avatars.Runtime.client {
 			if (currentAvatar == null)
 				return false;
 
-			return currentAvatar.GetIdentifier()
-					?.Equals(Page.Avatar.GetIdentifier())
-				?? false;
+			return currentAvatar.Identifier
+				.Equals(Page.Avatar.Identifier);
 		}
 
 		public void UpdateSelectButton() {
@@ -64,7 +63,7 @@ namespace Nox.Avatars.Runtime.client {
 			var controller = Main.Instance.ControllerAPI?.Current;
 
 			if (controller is IControllerAvatar ca) {
-				var id = Page.Avatar.GetIdentifier();
+				var id = Page.Avatar.Identifier;
 				await UniTask.WhenAll(
 					Main.UserAPI.UpdateCurrent(Main.UserAPI.MakeUpdateCurrentRequest().SetAvatar(id.ToString())),
 					ca.SetAvatar(id)
@@ -124,14 +123,14 @@ namespace Nox.Avatars.Runtime.client {
 			if (avatar == null)
 				return;
 
-			title.UpdateText("avatar.title", new[] { avatar.GetTitle() });
-			label.UpdateText("avatar.about.title", new[] { avatar.GetTitle() ?? avatar.GetIdentifier().ToString() });
+			title.UpdateText("avatar.title", new[] { avatar.Title });
+			label.UpdateText("avatar.about.title", new[] { avatar.Title ?? avatar.Identifier.ToString() });
 			identifier.UpdateText(
-				"avatar.identifier", new[] { avatar.GetIdentifier().ToString(), avatar.GetId().ToString(), avatar.GetServerAddress() }
+				"avatar.identifier", new[] { avatar.Identifier.ToString(), avatar.Id.ToString(), avatar.Server }
 			);
 
-			if (!string.IsNullOrEmpty(avatar.GetDescription())) {
-				descriptionText.UpdateText("avatar.description", new[] { avatar.GetDescription() });
+			if (!string.IsNullOrEmpty(avatar.Description)) {
+				descriptionText.UpdateText("avatar.description", new[] { avatar.Description });
 				descriptionContainer.SetActive(true);
 			} else
 				descriptionContainer.SetActive(false);
@@ -151,9 +150,9 @@ namespace Nox.Avatars.Runtime.client {
 			}
 
 			_thumbnailTokenSource = new CancellationTokenSource();
-			if (avatar?.GetThumbnailUrl() != null) {
+			if (avatar?.Thumbnail != null) {
 				var texture = await Main.NetworkAPI
-					.FetchTexture(avatar.GetThumbnailUrl())
+					.FetchTexture(avatar.Thumbnail)
 					.AttachExternalCancellation(_thumbnailTokenSource.Token);
 				if (texture) {
 					thumbnail.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), Vector2.zero);
@@ -178,7 +177,7 @@ namespace Nox.Avatars.Runtime.client {
 
 		private async UniTask UpdateFavoriteState() {
 			var favorites = await Main.Instance.Network.FetchFavorites();
-			_isFavorite = favorites.Any(f => f.Equals(Page.Avatar.GetIdentifier()));
+			_isFavorite = favorites.Values.Any(f => f.Equals(Page.Avatar.Identifier));
 			HoverFavorite(_isFavoriteHover);
 		}
 
@@ -205,13 +204,12 @@ namespace Nox.Avatars.Runtime.client {
 			_isFavorite                 = !_isFavorite;
 			favoriteButton.interactable = false;
 			HoverFavorite(_isFavoriteHover);
-			var id = AvatarIdentifier.From(Page.Avatar.GetIdentifier());
 
 			var favorites = _isFavorite
-				? await Main.Instance.Network.AddFavorite(id)
-				: await Main.Instance.Network.RemoveFavorite(id);
+				? await Main.Instance.Network.AddFavorite(Page.Avatar.Identifier)
+				: await Main.Instance.Network.RemoveFavorite(Page.Avatar.Identifier);
 
-			_isFavorite = favorites.Any(f => f.Equals(id));
+			_isFavorite = favorites.Values.Any(f => f.Equals(Page.Avatar.Identifier));
 			HoverFavorite(_isFavoriteHover);
 
 			favoriteButton.interactable = true;

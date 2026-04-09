@@ -37,7 +37,7 @@ namespace Nox.CCK.Avatars
 			if (token.IsCancellationRequested)
 				return false;
 
-			var descriptor = avatar.GetDescriptor();
+			var descriptor = avatar.Descriptor;
 			var gameObject = descriptor.GetAnchor();
 
 			if (!gameObject)

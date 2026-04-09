@@ -1,6 +1,5 @@
 using Nox.Avatars.Runtime.client;
 using Cysharp.Threading.Tasks;
-using Nox.Avatars;
 using Nox.Avatars.Controllers;
 using Nox.CCK.Language;
 using Nox.CCK.Utils;
@@ -14,13 +13,13 @@ namespace Nox.Avatars.Runtime.widget {
 		public static string GetDefaultKey()
 			=> "avatar";
 
-		private int               _mid;
-		private Image             _image;
+		private int _mid;
+		private Image _image;
 		private AspectRatioFitter _ratio;
-		private GameObject        _container;
-		private GameObject        _content;
-		private Image             _icon;
-		private TextLanguage      _label;
+		private GameObject _container;
+		private GameObject _content;
+		private Image _icon;
+		private TextLanguage _label;
 
 		private void OnClick()
 			=> Client.UiAPI?.SendGoto(_mid, AvatarPage.GetStaticKey(), "identifier", GetCurrentAvatarIdentifier());
@@ -34,18 +33,16 @@ namespace Nox.Avatars.Runtime.widget {
 		public int GetPriority()
 			=> 98;
 
-		internal static IAvatarIdentifier GetCurrentAvatarIdentifier() {
+		static internal Identifier GetCurrentAvatarIdentifier() {
 			var controller = Main.Instance.ControllerAPI?.Current;
-			if (controller is not IControllerAvatar ca)
-				return null;
-
-			var currentAvatar = ca.GetAvatar();
-			return currentAvatar?.GetIdentifier();
+			return controller is not IControllerAvatar ca
+				? Identifier.Invalid
+				: ca.GetAvatar().Identifier;
 		}
 
 		public async UniTask UpdateContent() {
 			var identifier = GetCurrentAvatarIdentifier();
-			if (!(identifier?.IsValid() ?? false)) {
+			if (!(identifier.IsValid())) {
 				_container.SetActive(false);
 				_label.UpdateText("avatar.no_avatar");
 				return;
@@ -64,7 +61,7 @@ namespace Nox.Avatars.Runtime.widget {
 			_label.UpdateText(
 				"value",
 				new[] {
-					avatar.GetTitle()
+					avatar.Title
 					?? identifier.ToString()
 				}
 			);
@@ -73,7 +70,7 @@ namespace Nox.Avatars.Runtime.widget {
 		}
 
 		private async UniTask UpdateBanner(IAvatar avatar) {
-			var url = avatar.GetThumbnailUrl();
+			var url = avatar.Thumbnail;
 
 			if (string.IsNullOrEmpty(url)) {
 				_container.SetActive(false);
@@ -96,7 +93,7 @@ namespace Nox.Avatars.Runtime.widget {
 		}
 
 		public static bool TryMake(IMenu menu, RectTransform parent, out (GameObject, IWidget) values) {
-			if (!(GetCurrentAvatarIdentifier()?.IsValid() ?? false)) {
+			if (!(GetCurrentAvatarIdentifier().IsValid())) {
 				values = (null, null);
 				return false;
 			}

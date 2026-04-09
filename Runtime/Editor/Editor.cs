@@ -24,7 +24,7 @@ namespace Nox.Avatars.Runtime.Editor {
 			_events = new[] {
 				api.EventAPI.Subscribe("user_updated", UserConnectedNotification.OnUserUpdated),
 			};
-			UserConnectedNotification.OnUserUpdated(UserAPI.GetCurrent());
+			UserConnectedNotification.OnUserUpdated(UserAPI.Current);
 		}
 
 		public void OnDisposeEditor() {

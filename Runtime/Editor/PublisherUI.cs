@@ -43,10 +43,10 @@ namespace Nox.Avatars.Runtime.Editor {
 				return;
 			}
 
-			_infoServerField?.SetValueWithoutNotify(_avatar.GetServerAddress() ?? "");
-			_infoIdField?.SetValueWithoutNotify(_avatar.GetId());
-			_infoNameField?.SetValueWithoutNotify(_avatar.GetTitle() ?? "");
-			_infoDescriptionField?.SetValueWithoutNotify(_avatar.GetDescription() ?? "");
+			_infoServerField?.SetValueWithoutNotify(_avatar.Server ?? "");
+			_infoIdField?.SetValueWithoutNotify(_avatar.Id);
+			_infoNameField?.SetValueWithoutNotify(_avatar.Title ?? "");
+			_infoDescriptionField?.SetValueWithoutNotify(_avatar.Description ?? "");
 			UpdateThumbnailPreview();
 		}
 
@@ -56,7 +56,7 @@ namespace Nox.Avatars.Runtime.Editor {
 				return;
 			}
 
-			if (_avatar != null && !string.IsNullOrEmpty(_avatar.GetThumbnailUrl())) {
+			if (_avatar != null && !string.IsNullOrEmpty(_avatar.Thumbnail)) {
 				DownloadAndDisplayThumbnail().Forget();
 			}
 			else {
@@ -78,7 +78,7 @@ namespace Nox.Avatars.Runtime.Editor {
 				_thumbnailImage.style.display = DisplayStyle.None;
 				_thumbnailFixButton.style.display = DisplayStyle.None;
 
-				var thumbnailUrl = _avatar.GetThumbnailUrl();
+				var thumbnailUrl = _avatar.Thumbnail;
 				var texture = await Main.NetworkAPI.FetchTexture(thumbnailUrl);
 
 				if (texture != null) {

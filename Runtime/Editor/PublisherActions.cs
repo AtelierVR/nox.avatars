@@ -13,8 +13,8 @@ namespace Nox.Avatars.Runtime.Editor {
 	// Actions partial class - handles attach, publish, and upload operations
 	public partial class PublisherInstance {
 		private async UniTask CheckLoginStatus() {
-			var user = Main.UserAPI.GetCurrent();
-			var isLoggedIn = user != null && !string.IsNullOrEmpty(user.GetServerAddress());
+			var user       = Main.UserAPI.Current;
+			var isLoggedIn = user != null && !string.IsNullOrEmpty(user.Server);
 
 			if (!isLoggedIn) {
 				UpdateDisplayState(DisplayState.NotLogged);
@@ -28,12 +28,11 @@ namespace Nox.Avatars.Runtime.Editor {
 			}
 
 			if (_attachServerField != null)
-				_attachServerField.SetValueWithoutNotify(user.GetServerAddress());
+				_attachServerField.SetValueWithoutNotify(user.Server);
 
 			if (descriptor.publishId > 0 && !string.IsNullOrEmpty(descriptor.publishServer)) {
 				await AttachAvatarAsync(descriptor.publishServer, descriptor.publishId, false);
-			}
-			else {
+			} else {
 				UpdateDisplayState(DisplayState.NotAttached);
 			}
 		}
@@ -50,8 +49,8 @@ namespace Nox.Avatars.Runtime.Editor {
 
 			var server = _attachServerField?.value;
 			if (string.IsNullOrEmpty(server)) {
-				var user = Main.UserAPI.GetCurrent();
-				server = user?.GetServerAddress();
+				var user = Main.UserAPI.Current;
+				server = user?.Server;
 			}
 
 			if (string.IsNullOrEmpty(server)) {
@@ -83,8 +82,8 @@ namespace Nox.Avatars.Runtime.Editor {
 			}
 
 			if (avatar != null) {
-				var user = Main.UserAPI.GetCurrent();
-				var isContributor = user != null && user.ToIdentifier().Equals(avatar.GetOwnerId());
+				var user          = Main.UserAPI.Current;
+				var isContributor = user != null && user.Identifier.Equals(avatar.Owner);
 
 				if (!isContributor) {
 					Logger.OpenDialog("Error", "You are not a contributor of this avatar.", "Ok");
@@ -104,8 +103,8 @@ namespace Nox.Avatars.Runtime.Editor {
 				return null;
 			}
 
-			descriptor.publishId = avatar.GetId();
-			descriptor.publishServer = avatar.GetServerAddress();
+			descriptor.publishId     = avatar.Id;
+			descriptor.publishServer = avatar.Server;
 			EditorUtility.SetDirty(descriptor);
 			_avatar = avatar;
 			UpdateAvatarUI();
@@ -114,8 +113,9 @@ namespace Nox.Avatars.Runtime.Editor {
 		}
 
 		private async UniTask OnRefreshInfoAsync() {
-			if (_avatar == null) return;
-			await AttachAvatarAsync(_avatar.GetServerAddress(), _avatar.GetId(), false);
+			if (_avatar == null)
+				return;
+			await AttachAvatarAsync(_avatar.Server, _avatar.Id, false);
 		}
 
 		private async UniTask OnUpdateInfoAsync() {
@@ -124,23 +124,22 @@ namespace Nox.Avatars.Runtime.Editor {
 				return;
 			}
 
-			var name = _infoNameField?.value ?? "";
+			var name        = _infoNameField?.value ?? "";
 			var description = _infoDescriptionField?.value ?? "";
 
 			var success = await Main.Instance.Network.Update(
-				_avatar.GetId(),
+				_avatar.Id,
 				new UpdateAvatarRequest {
-					title = name,
+					title       = name,
 					description = description
 				},
-				_avatar.GetServerAddress()
+				_avatar.Server
 			);
 
 			if (success != null) {
 				_avatar = success;
 				UpdateAvatarUI();
-			}
-			else {
+			} else {
 				Logger.OpenDialog("Error", "Failed to update avatar information.", "Ok");
 			}
 		}
@@ -173,7 +172,7 @@ namespace Nox.Avatars.Runtime.Editor {
 			}
 
 			ShowBuildProgress(0f, "Verifying avatar...");
-			_avatar = await Main.Instance.Network.Fetch(_avatar.GetId(), _avatar.GetServerAddress());
+			_avatar = await Main.Instance.Network.Fetch(_avatar.Id, _avatar.Server);
 			if (_avatar == null) {
 				HideBuildProgress();
 				Logger.OpenDialog("Error", "Failed to verify avatar.", "Ok");
@@ -181,42 +180,41 @@ namespace Nox.Avatars.Runtime.Editor {
 			}
 
 			var tempBuildPath = CreateTempBuildPath();
-			var config = Config.Load();
+			var config        = Config.Load();
 			try {
 				// Check if asset already exists BEFORE building
 				ShowBuildProgress(0.1f, "Checking existing assets...");
 
 				var search = await Main.Instance.Network.SearchAssets(
-					_avatar.GetId(),
+					_avatar.Id,
 					new AssetSearchRequest {
-						Versions = new[] { version },
+						Versions  = new[] { version },
 						Platforms = new[] { target.GetPlatformName() },
-						Engines = new[] { Constants.CurrentEngine.GetEngineName() },
+						Engines   = new[] { Constants.CurrentEngine.GetEngineName() },
 						ShowEmpty = true,
-						Limit = 1,
-						Offset = 0
+						Limit     = 1,
+						Offset    = 0
 					},
-					_avatar.GetServerAddress()
+					_avatar.Server
 				);
 
-				var existingAsset = search?.GetAssets().FirstOrDefault();
-				var assetAlreadyExists = existingAsset != null && !existingAsset.IsEmpty();
+				var existingAsset         = search?.Items.FirstOrDefault();
+				var assetAlreadyExists    = existingAsset is { IsEmpty: false };
 				var strictVersionChecking = config.Get("sdk.strict_version", true);
-				var autoVersion = config.Get("sdk.auto_version", true);
+				var autoVersion           = config.Get("sdk.auto_version", true);
 
 				if (assetAlreadyExists) {
 					// Auto-increment has priority: if enabled, increment instead of blocking or overwriting
 					if (autoVersion) {
 						// Auto-increment: use version+1 instead of overwriting
-						version = (ushort)(version + 1);
+						version                   = (ushort)(version + 1);
 						descriptor.publishVersion = version;
 						EditorUtility.SetDirty(descriptor);
 						if (_assetVersionField != null)
 							_assetVersionField.value = version;
 
 						Logger.Log($"Asset version {version - 1} already exists. Auto-incremented to version {version}");
-					}
-					else if (strictVersionChecking) {
+					} else if (strictVersionChecking) {
 						// Strict mode without auto-increment: block the upload
 						HideBuildProgress();
 						ShowResultDialog(false, $"Asset version {version} already exists for {target.GetPlatformName()}.\n\nPlease increment the version number, enable 'Auto increment version', or disable 'Strict version checking' to overwrite.");
@@ -229,11 +227,11 @@ namespace Nox.Avatars.Runtime.Editor {
 				ShowBuildProgress(0.2f, "Building avatar...");
 
 				var buildData = new BuildData {
-					Descriptor = descriptor,
-					Target = target,
-					OutputPath = tempBuildPath,
-					Filename = descriptor.name + "_" + version + ".nox",
-					ShowDialog = false,
+					Descriptor       = descriptor,
+					Target           = target,
+					OutputPath       = tempBuildPath,
+					Filename         = descriptor.name + "_" + version + ".nox",
+					ShowDialog       = false,
 					ProgressCallback = (progress, status) => ShowBuildProgress(0.2f + (progress * 0.5f), status)
 				};
 
@@ -264,29 +262,29 @@ namespace Nox.Avatars.Runtime.Editor {
 
 				// Search for asset again with the potentially updated version
 				search = await Main.Instance.Network.SearchAssets(
-					_avatar.GetId(),
+					_avatar.Id,
 					new AssetSearchRequest {
-						Versions = new[] { version },
+						Versions  = new[] { version },
 						Platforms = new[] { target.GetPlatformName() },
-						Engines = new[] { Constants.CurrentEngine.GetEngineName() },
+						Engines   = new[] { Constants.CurrentEngine.GetEngineName() },
 						ShowEmpty = true,
-						Limit = 1,
-						Offset = 0
+						Limit     = 1,
+						Offset    = 0
 					},
-					_avatar.GetServerAddress()
+					_avatar.Server
 				);
 
-				var asset = search?.GetAssets().FirstOrDefault();
+				var asset = search?.Items.FirstOrDefault();
 
 				if (asset == null) {
 					asset = await Main.Instance.Network.CreateAsset(
-						_avatar.GetId(),
+						_avatar.Id,
 						new CreateAssetRequest {
-							Version = version,
-							Engine = Constants.CurrentEngine.GetEngineName(),
+							Version  = version,
+							Engine   = Constants.CurrentEngine.GetEngineName(),
 							Platform = target.GetPlatformName()
 						},
-						_avatar.GetServerAddress()
+						_avatar.Server
 					);
 				}
 
@@ -299,13 +297,12 @@ namespace Nox.Avatars.Runtime.Editor {
 				ShowBuildProgress(0.8f, $"Uploading {sizeMb:F1} MB file...");
 
 				var uploadResponse = await Main.Instance.Network.UploadAssetFile(
-					_avatar.GetId(),
-					asset.GetId(),
+					_avatar.Id,
+					asset.Id,
 					filePath,
 					fileHash,
-					_avatar.GetServerAddress(),
-					onProgress: progress =>
-					{
+					_avatar.Server,
+					onProgress: progress => {
 						var sizeUploaded = progress * sizeMb;
 						ShowBuildProgress(0.8f + progress * 0.1f, $"Uploading... {sizeUploaded:F2} MB / {sizeMb:F2} MB - {progress * 100:F0}%");
 					}
@@ -322,10 +319,10 @@ namespace Nox.Avatars.Runtime.Editor {
 				// Poll asset status until processing is complete
 				ShowBuildProgress(0.9f, $"Processing asset... (Queue position: {uploadResponse.QueuePosition})");
 
-				const int maxAttempts = 300; // 5 minutes max with 1 second interval
-				var attempt = 0;
-				var isProcessing = true;
-				var nextTryAt = uploadResponse.NextTryAt;
+				const int maxAttempts  = 300; // 5 minutes max with 1 second interval
+				var       attempt      = 0;
+				var       isProcessing = true;
+				var       nextTryAt    = uploadResponse.NextTryAt;
 
 				while (isProcessing && attempt < maxAttempts) {
 					// Calculate delay based on NextTryAt if available
@@ -340,9 +337,9 @@ namespace Nox.Avatars.Runtime.Editor {
 					attempt++;
 
 					var status = await Main.Instance.Network.GetAssetStatus(
-						_avatar.GetId(),
-						asset.GetId(),
-						_avatar.GetServerAddress()
+						_avatar.Id,
+						asset.Id,
+						_avatar.Server
 					);
 
 					if (status == null) {
@@ -393,8 +390,7 @@ namespace Nox.Avatars.Runtime.Editor {
 				HideBuildProgress();
 				ShowResultDialog(false, $"An error occurred: {ex.Message}");
 				Logger.LogError(new Exception("Failed to publish avatar", ex));
-			}
-			finally {
+			} finally {
 				CleanupTempPath(tempBuildPath);
 			}
 		}
@@ -434,15 +430,15 @@ namespace Nox.Avatars.Runtime.Editor {
 
 				// Search for all assets for this avatar
 				var search = await Main.Instance.Network.SearchAssets(
-					_avatar.GetId(),
+					_avatar.Id,
 					new AssetSearchRequest {
 						ShowEmpty = true,
-						Limit = 1,
-						Offset = 0,
-						Engines = new[] { Constants.CurrentEngine.GetEngineName() },
-						Versions = new[] { ushort.MaxValue }
+						Limit     = 1,
+						Offset    = 0,
+						Engines   = new[] { Constants.CurrentEngine.GetEngineName() },
+						Versions  = new[] { ushort.MaxValue }
 					},
-					_avatar.GetServerAddress()
+					_avatar.Server
 				);
 
 				if (search == null) {
@@ -452,10 +448,10 @@ namespace Nox.Avatars.Runtime.Editor {
 
 				ushort maxVersion = 0;
 
-				var assets = search.GetAssets();
+				var assets = search.Items;
 				if (assets != null)
 					foreach (var asset in assets) {
-						var version = asset.GetVersion();
+						var version = asset.Version;
 						if (version > maxVersion)
 							maxVersion = version;
 					}
@@ -473,10 +469,8 @@ namespace Nox.Avatars.Runtime.Editor {
 			} catch (Exception ex) {
 				Logger.OpenDialog("Error", $"Failed to detect version: {ex.Message}", "Ok");
 				Logger.LogError($"Failed to detect version: {ex.Message}");
-			}
-			finally {
-				if (_assetDetectVersionButton != null)
-					_assetDetectVersionButton.SetEnabled(true);
+			} finally {
+				_assetDetectVersionButton?.SetEnabled(true);
 			}
 		}
 	}

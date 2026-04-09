@@ -1,12 +1,22 @@
+using Cysharp.Threading.Tasks;
+
 namespace Nox.Avatars {
 	public interface IAssetSearchResponse {
 		
-		public uint GetTotal();
+		public uint Total { get; }
 
-		public uint GetLimit();
+		public uint Limit { get; }
 
-		public uint GetOffset();
+		public uint Offset { get; }
 
-		public IAvatarAsset[] GetAssets();
+		public IAvatarAsset[] Items { get; }
+
+		public bool HasPrevious();
+
+		public bool HasNext();
+
+		public UniTask<IAssetSearchResponse> Previous();
+
+		public UniTask<IAssetSearchResponse> Next();
 	}
 }
