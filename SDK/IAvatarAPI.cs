@@ -58,27 +58,27 @@ namespace Nox.Avatars {
 		/// <returns></returns>
 		public UniTask<IRuntimeAvatar> LoadFromCache(string hash, Dictionary<string, object> arguments = null, Action<float> progress = null, CancellationToken token = default);
 
-		public UniTask<IAvatar> Fetch(Identifier identifier, string from = null);
+		public UniTask<IAvatar> Fetch(Identifier identifier);
 
 		public UniTask<ISearchResponse> Search(ISearchRequest data, string from = null);
 
 		public UniTask<IAvatar> Create(ICreateAvatarRequest data, string server);
 
-		public UniTask<IAvatar> Update(Identifier identifier, IUpdateAvatarRequest form, string from = null);
+		public UniTask<IAvatar> Update(Identifier identifier, IUpdateAvatarRequest form);
 
-		public UniTask<bool> Delete(Identifier identifier, string from = null);
+		public UniTask<bool> Delete(Identifier identifier);
 
-		public UniTask<IAssetSearchResponse> SearchAssets(Identifier identifier, IAssetSearchRequest data, string from = null);
+		public UniTask<IAssetSearchResponse> SearchAssets(Identifier identifier, IAssetSearchRequest data);
 
-		public UniTask<bool> UploadThumbnail(Identifier identifier, Texture2D texture, string from = null, Action<float> onProgress = null);
+		public UniTask<bool> UploadThumbnail(Identifier identifier, Texture2D texture, Action<float> onProgress = null);
 
-		public UniTask<IUploadAssetResponse> UploadAssetFile(Identifier identifier, uint assetId, string filePath, string fileHash = null, string from = null, Action<float> onProgress = null);
+		public UniTask<IUploadAssetResponse> UploadAssetFile(Identifier identifier, uint assetId, string filePath, string fileHash = null, Action<float> onProgress = null);
 
-		public UniTask<IAssetStatusResponse> GetAssetStatus(Identifier identifier, uint assetId, string from = null);
+		public UniTask<IAssetStatusResponse> GetAssetStatus(Identifier identifier, uint assetId);
 
-		public UniTask<IAvatarAsset> CreateAsset(Identifier identifier, ICreateAssetRequest data, string from = null);
+		public UniTask<IAvatarAsset> CreateAsset(Identifier identifier, ICreateAssetRequest data);
 
-		public ICaching DownloadToCache(string url, string hash = null, string from = null, UnityAction<float> progress = null, CancellationToken token = default);
+		public ICaching DownloadToCache(string url, string hash = null, UnityAction<float> progress = null, CancellationToken token = default);
 
 		public void RemoveFromCache(string hash);
 

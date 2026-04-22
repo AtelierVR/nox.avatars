@@ -139,8 +139,8 @@ namespace Nox.Avatars.Runtime
             => await AvatarLoader.LoadFromCache(hash, arguments, progress, token)
                 ?? await LoadError(arguments, progress, token);
 
-        public async UniTask<IAvatar> Fetch(Identifier identifier, string from = null)
-            => await Network.Fetch(identifier, from);
+        public async UniTask<IAvatar> Fetch(Identifier identifier)
+            => await Network.Fetch(identifier);
 
         public ISearchRequest MakeSearchRequest()
             => new SearchRequest();
@@ -151,28 +151,28 @@ namespace Nox.Avatars.Runtime
         public async UniTask<IAvatar> Create(ICreateAvatarRequest data, string server)
             => await Network.Create(CreateAvatarRequest.FromBase(data), server);
 
-        public async UniTask<IAvatar> Update(Identifier identifier, IUpdateAvatarRequest form, string from = null)
-            => await Network.Update(identifier, UpdateAvatarRequest.FromBase(form), from);
+        public async UniTask<IAvatar> Update(Identifier identifier, IUpdateAvatarRequest form)
+            => await Network.Update(identifier, UpdateAvatarRequest.FromBase(form));
 
-        public async UniTask<bool> Delete(Identifier identifier, string from = null)
-            => await Network.Delete(identifier, from);
+        public async UniTask<bool> Delete(Identifier identifier)
+            => await Network.Delete(identifier);
 
-        public async UniTask<IAssetSearchResponse> SearchAssets(Identifier identifier, IAssetSearchRequest data, string from = null)
-            => await Network.SearchAssets(identifier, AssetSearchRequest.FromBase(data), from);
+        public async UniTask<IAssetSearchResponse> SearchAssets(Identifier identifier, IAssetSearchRequest data)
+            => await Network.SearchAssets(identifier, AssetSearchRequest.FromBase(data));
 
-        public async UniTask<bool> UploadThumbnail(Identifier identifier, Texture2D texture, string from = null, Action<float> onProgress = null)
-            => await Network.UploadThumbnail(identifier, texture, from, onProgress);
+        public async UniTask<bool> UploadThumbnail(Identifier identifier, Texture2D texture, Action<float> onProgress = null)
+            => await Network.UploadThumbnail(identifier, texture, onProgress);
 
-        public async UniTask<IUploadAssetResponse> UploadAssetFile(Identifier identifier, uint assetId, string filePath, string fileHash = null, string from = null, Action<float> onProgress = null)
-            => await Network.UploadAssetFile(identifier, assetId, filePath, fileHash, from, onProgress);
+        public async UniTask<IUploadAssetResponse> UploadAssetFile(Identifier identifier, uint assetId, string filePath, string fileHash = null, Action<float> onProgress = null)
+            => await Network.UploadAssetFile(identifier, assetId, filePath, fileHash, onProgress);
 
-        public async UniTask<IAssetStatusResponse> GetAssetStatus(Identifier identifier, uint assetId, string from = null)
-            => await Network.GetAssetStatus(identifier, assetId, from);
+        public async UniTask<IAssetStatusResponse> GetAssetStatus(Identifier identifier, uint assetId)
+            => await Network.GetAssetStatus(identifier, assetId);
 
-        public async UniTask<IAvatarAsset> CreateAsset(Identifier identifier, ICreateAssetRequest data, string from = null)
-            => await Network.CreateAsset(identifier, CreateAssetRequest.FromBase(data), from);
+        public async UniTask<IAvatarAsset> CreateAsset(Identifier identifier, ICreateAssetRequest data)
+            => await Network.CreateAsset(identifier, CreateAssetRequest.FromBase(data));
 
-        public ICaching DownloadToCache(string url, string hash = null, string from = null, UnityAction<float> progress = null, CancellationToken token = default)
+        public ICaching DownloadToCache(string url, string hash = null, UnityAction<float> progress = null, CancellationToken token = default)
         {
             var caching = Cache.AddDownload(url, hash, token);
             if (progress != null) caching.OnProgress.AddListener(progress);

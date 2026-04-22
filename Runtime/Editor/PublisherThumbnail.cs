@@ -103,9 +103,8 @@ namespace Nox.Avatars.Runtime.Editor {
 				_thumbnailStatus.text = "Uploading thumbnail...";
 
 				var success = await Main.Instance.Network.UploadThumbnail(
-					_avatar.Id,
+					_avatar.Identifier,
 					texture,
-					_avatar.Server,
 					progress => _thumbnailStatus.text = $"Uploading thumbnail... {progress * 100:F0}%"
 				);
 

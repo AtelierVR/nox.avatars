@@ -31,7 +31,7 @@ namespace Nox.Avatars.Runtime.Network {
 		[JsonProperty("hash")]
 		public string Hash  { get; private set; }
 
-		[JsonProperty("size")]
+		[JsonProperty("size", NullValueHandling = NullValueHandling.Ignore)]
 		public long Size { get; private set; }
 	}
 }

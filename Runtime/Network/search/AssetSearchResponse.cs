@@ -9,7 +9,6 @@ namespace Nox.Avatars.Runtime.Network {
 	public class AssetSearchResponse : IAssetSearchResponse, INoxObject {
 		[JsonIgnore] internal Identifier Identifier;
 		[JsonIgnore] internal AssetSearchRequest Request;
-		[JsonIgnore] internal string Server;
 
 		[JsonProperty("total")]
 		public uint Total { get; private set; }
@@ -25,8 +24,7 @@ namespace Nox.Avatars.Runtime.Network {
 
 		IAvatarAsset[] IAssetSearchResponse.Items
 			=> Items.ToArray<IAvatarAsset>();
-
-
+		
 		public bool HasNext()
 			=> Offset + Limit < Total;
 
@@ -47,8 +45,7 @@ namespace Nox.Avatars.Runtime.Network {
 						Versions  = Request.Versions,
 						Engines   = Request.Engines,
 						Platforms = Request.Platforms
-					},
-					Server
+					}
 				)
 				: default;
 
@@ -66,8 +63,7 @@ namespace Nox.Avatars.Runtime.Network {
 						Versions  = Request.Versions,
 						Engines   = Request.Engines,
 						Platforms = Request.Platforms
-					},
-					Server
+					}
 				)
 				: default;
 

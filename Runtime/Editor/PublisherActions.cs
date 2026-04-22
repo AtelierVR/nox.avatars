@@ -73,7 +73,7 @@ namespace Nox.Avatars.Runtime.Editor {
 			Network.Avatar avatar = null;
 			if (id > 0) {
 				Logger.LogDebug($"Attempting to attach avatar {id}");
-				avatar = await Main.Instance.Network.Fetch(id, server);
+				avatar = await Main.Instance.Network.Fetch(new Identifier("a", id, null, server));
 			}
 
 			if (avatar == null && createIfNotFound) {
@@ -128,12 +128,11 @@ namespace Nox.Avatars.Runtime.Editor {
 			var description = _infoDescriptionField?.value ?? "";
 
 			var success = await Main.Instance.Network.Update(
-				_avatar.Id,
+				_avatar.Identifier,
 				new UpdateAvatarRequest {
 					title       = name,
 					description = description
-				},
-				_avatar.Server
+				}
 			);
 
 			if (success != null) {
@@ -172,7 +171,7 @@ namespace Nox.Avatars.Runtime.Editor {
 			}
 
 			ShowBuildProgress(0f, "Verifying avatar...");
-			_avatar = await Main.Instance.Network.Fetch(_avatar.Id, _avatar.Server);
+			_avatar = await Main.Instance.Network.Fetch(_avatar.Identifier);
 			if (_avatar == null) {
 				HideBuildProgress();
 				Logger.OpenDialog("Error", "Failed to verify avatar.", "Ok");
@@ -186,7 +185,7 @@ namespace Nox.Avatars.Runtime.Editor {
 				ShowBuildProgress(0.1f, "Checking existing assets...");
 
 				var search = await Main.Instance.Network.SearchAssets(
-					_avatar.Id,
+					_avatar.Identifier,
 					new AssetSearchRequest {
 						Versions  = new[] { version },
 						Platforms = new[] { target.GetPlatformName() },
@@ -194,8 +193,7 @@ namespace Nox.Avatars.Runtime.Editor {
 						ShowEmpty = true,
 						Limit     = 1,
 						Offset    = 0
-					},
-					_avatar.Server
+					}
 				);
 
 				var existingAsset         = search?.Items.FirstOrDefault();
@@ -262,7 +260,7 @@ namespace Nox.Avatars.Runtime.Editor {
 
 				// Search for asset again with the potentially updated version
 				search = await Main.Instance.Network.SearchAssets(
-					_avatar.Id,
+					_avatar.Identifier,
 					new AssetSearchRequest {
 						Versions  = new[] { version },
 						Platforms = new[] { target.GetPlatformName() },
@@ -270,21 +268,19 @@ namespace Nox.Avatars.Runtime.Editor {
 						ShowEmpty = true,
 						Limit     = 1,
 						Offset    = 0
-					},
-					_avatar.Server
+					}
 				);
 
 				var asset = search?.Items.FirstOrDefault();
 
 				if (asset == null) {
 					asset = await Main.Instance.Network.CreateAsset(
-						_avatar.Id,
+						_avatar.Identifier,
 						new CreateAssetRequest {
 							Version  = version,
 							Engine   = Constants.CurrentEngine.GetEngineName(),
 							Platform = target.GetPlatformName()
-						},
-						_avatar.Server
+						}
 					);
 				}
 
@@ -297,11 +293,10 @@ namespace Nox.Avatars.Runtime.Editor {
 				ShowBuildProgress(0.8f, $"Uploading {sizeMb:F1} MB file...");
 
 				var uploadResponse = await Main.Instance.Network.UploadAssetFile(
-					_avatar.Id,
+					_avatar.Identifier,
 					asset.Id,
 					filePath,
 					fileHash,
-					_avatar.Server,
 					onProgress: progress => {
 						var sizeUploaded = progress * sizeMb;
 						ShowBuildProgress(0.8f + progress * 0.1f, $"Uploading... {sizeUploaded:F2} MB / {sizeMb:F2} MB - {progress * 100:F0}%");
@@ -337,9 +332,8 @@ namespace Nox.Avatars.Runtime.Editor {
 					attempt++;
 
 					var status = await Main.Instance.Network.GetAssetStatus(
-						_avatar.Id,
-						asset.Id,
-						_avatar.Server
+						_avatar.Identifier,
+						asset.Id
 					);
 
 					if (status == null) {
@@ -430,15 +424,14 @@ namespace Nox.Avatars.Runtime.Editor {
 
 				// Search for all assets for this avatar
 				var search = await Main.Instance.Network.SearchAssets(
-					_avatar.Id,
+					_avatar.Identifier,
 					new AssetSearchRequest {
 						ShowEmpty = true,
 						Limit     = 1,
 						Offset    = 0,
 						Engines   = new[] { Constants.CurrentEngine.GetEngineName() },
 						Versions  = new[] { ushort.MaxValue }
-					},
-					_avatar.Server
+					}
 				);
 
 				if (search == null) {

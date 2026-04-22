@@ -100,7 +100,7 @@ namespace Nox.Avatars.Runtime.client {
 			if (_isLoading)
 				return;
 			_isLoading = true;
-			Avatar     = await Main.Instance.Network.Fetch(_identifier.ToString());
+			Avatar     = await Main.Instance.Network.Fetch(_identifier);
 			_isLoading = false;
 			if (update)
 				_component.UpdateContent(Avatar, Asset);
@@ -111,7 +111,7 @@ namespace Nox.Avatars.Runtime.client {
 				return;
 			_isLoading = true;
 			var searchResult = await Main.Instance.Network.SearchAssets(
-				_identifier.ToString(),
+				_identifier,
 				new Network.AssetSearchRequest {
 					Limit     = 1,
 					Versions  = new[] { Version },
