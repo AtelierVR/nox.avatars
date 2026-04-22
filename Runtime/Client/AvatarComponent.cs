@@ -292,7 +292,7 @@ namespace Nox.Avatars.Runtime.client {
 
 			var component = content.AddComponent<AvatarComponent>();
 			component.Page = avatarPage;
-			content.name   = $"[{avatarPage.GetKey()}_{content.GetInstanceID()}]";
+			content.name   = $"[{avatarPage.GetKey()}_{content.GetEntityId().GetHashCode()}]";
 
 			var splitContent   = Reference.GetComponent<RectTransform>("content", content);
 			var containerAsset = Client.GetAsset<GameObject>("ui:prefabs/container.prefab");
