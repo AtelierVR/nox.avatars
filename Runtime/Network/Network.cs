@@ -59,14 +59,14 @@ namespace Nox.Avatars.Runtime.Network {
 			return avatar;
 		}
 
-		public async UniTask<SearchResponse> Search(SearchRequest data, string from = null, CancellationToken cancellationToken = default) {
-			var address = from ?? Main.UserAPI?.Current.Server;
+		public async UniTask<SearchResponse> Search(ISearchRequest data, CancellationToken cancellationToken = default) {
+			var address = data.Server ?? Main.UserAPI?.Current.Server;
 			if (string.IsNullOrEmpty(address)) {
 				Logger.LogError("Cannot search avatars: no server address provided.");
 				return null;
 			}
 
-			var request = await RequestNode.To(address, $"/avatars{data.ToParams()}");
+			var request = await RequestNode.To(address, $"/avatars{data}");
 			if (request == null) {
 				Logger.LogError($"Failed to create request for avatar search");
 				return null;
@@ -80,8 +80,9 @@ namespace Nox.Avatars.Runtime.Network {
 			}
 
 			var avatars = response.Data;
+			avatars.Request = data;
 
-			foreach (var avatar in avatars.avatars)
+			foreach (var avatar in avatars.Items)
 				InvokeFetch(avatar);
 
 			return avatars;
@@ -157,7 +158,7 @@ namespace Nox.Avatars.Runtime.Network {
 			await request.Send(cancellationToken);
 			if (request.Ok())
 				return true;
-			
+
 			Logger.LogError($"Failed to delete avatar {ide} from {address}");
 			return false;
 		}
@@ -181,10 +182,10 @@ namespace Nox.Avatars.Runtime.Network {
 				Logger.LogError($"Failed to get assets for avatar {ide} from {address}: {response.Error.Message}");
 				return null;
 			}
-			
+
 			response.Data.Identifier = ide;
 			response.Data.Request    = data;
-			
+
 			return response.Data;
 		}
 
@@ -213,7 +214,7 @@ namespace Nox.Avatars.Runtime.Network {
 			return response.Data;
 		}
 
-		public async UniTask<bool> UploadThumbnail(Identifier ide, Texture2D texture, Action<float> onProgress = null, CancellationToken cancellationToken = default){
+		public async UniTask<bool> UploadThumbnail(Identifier ide, Texture2D texture, Action<float> onProgress = null, CancellationToken cancellationToken = default) {
 			var (id, address) = Optimize(ide);
 			if (address == Identifier.LOCAL_SERVER) {
 				Logger.LogError($"Cannot fetch world {ide} from {address}");
@@ -268,7 +269,7 @@ namespace Nox.Avatars.Runtime.Network {
 
 			if (request.Ok())
 				return true;
-			
+
 			Logger.LogError($"Failed to upload thumbnail for avatar {ide} on {address}");
 			return false;
 
@@ -280,7 +281,7 @@ namespace Nox.Avatars.Runtime.Network {
 				Logger.LogError($"Cannot fetch world {ide} from {address}");
 				return null;
 			}
-			
+
 			var request = await RequestNode.To(address, $"/avatars/{id}/assets/{assetId}/file");
 			if (request == null) {
 				Logger.LogError($"Failed to create request for avatar {ide}");
@@ -358,7 +359,7 @@ namespace Nox.Avatars.Runtime.Network {
 				Logger.LogError($"Cannot fetch world {ide} from {address}");
 				return null;
 			}
-			
+
 			var output = Path.Join(Application.temporaryCachePath, string.IsNullOrEmpty(hash) ? $"{ide}_{assetId}" : hash);
 
 			var request = await RequestNode.To(address, $"/avatars/{id}/assets/{assetId}/file");
@@ -394,7 +395,7 @@ namespace Nox.Avatars.Runtime.Network {
 			return output;
 		}
 
-		
+
 		[Serializable]
 		public class Favorites : IFavorites {
 			[JsonIgnore]

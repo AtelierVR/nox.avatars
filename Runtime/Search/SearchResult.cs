@@ -19,7 +19,7 @@ namespace Nox.Avatars.Runtime.Search {
 
 		public IResultData[] Data
 			=> Response != null
-				? Response.avatars
+				? Response.Items
 					.Select(x => new SearchData { Reference = x })
 					.Cast<IResultData>()
 					.ToArray()

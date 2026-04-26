@@ -194,8 +194,8 @@ namespace Nox.Avatars.Runtime
         public async UniTask<IFavorites> GetFavorites()
             => await Network.FetchFavorites();
 
-        public async UniTask<ISearchResponse> Search(ISearchRequest data, string from = null)
-            => await Network.Search(SearchRequest.FromBase(data), from);
+        public async UniTask<ISearchResponse> Search(ISearchRequest data)
+            => await Network.Search(data);
     }
 
 }

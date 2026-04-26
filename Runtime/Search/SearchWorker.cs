@@ -1,5 +1,6 @@
 using Nox.Avatars.Runtime.Network;
 using Cysharp.Threading.Tasks;
+using Nox.CCK.Avatars;
 using Nox.Search;
 
 namespace Nox.Avatars.Runtime.Search {
@@ -18,10 +19,11 @@ namespace Nox.Avatars.Runtime.Search {
 				return new SearchResult { Error = "Invalid server address." };
 			var data = await Main.Instance.Network.Search(
 				new SearchRequest {
-					query  = options.Query,
-					offset = options.Page * options.Limit,
-					limit  = options.Limit,
-				}, ServerAddress
+					Server = ServerAddress,
+					Query  = options.Query,
+					Offset = options.Page * options.Limit,
+					Limit  = options.Limit,
+				}
 			);
 			if (data == null) return new SearchResult { Error = "Error fetching users." };
 			return new SearchResult {

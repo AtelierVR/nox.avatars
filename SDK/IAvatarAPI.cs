@@ -60,7 +60,7 @@ namespace Nox.Avatars {
 
 		public UniTask<IAvatar> Fetch(Identifier identifier);
 
-		public UniTask<ISearchResponse> Search(ISearchRequest data, string from = null);
+		public UniTask<ISearchResponse> Search(ISearchRequest data);
 
 		public UniTask<IAvatar> Create(ICreateAvatarRequest data, string server);
 
