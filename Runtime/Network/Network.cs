@@ -397,6 +397,8 @@ namespace Nox.Avatars.Runtime.Network {
 		
 		[Serializable]
 		public class Favorites : IFavorites {
+			[JsonIgnore]
+			public string Key { get; set; }
 			[JsonProperty("label")]
 			public string Label { get; set; }
 			[JsonProperty("values"), JsonConverter(typeof(ArrayConverter<StringToIdentifierConverter>))]
@@ -410,10 +412,17 @@ namespace Nox.Avatars.Runtime.Network {
 		/// </summary>
 		/// <returns></returns>
 		public async UniTask<Favorites> FetchFavorites(uint group = 0, bool pub = true) {
-			var entry = await Main.Instance.TableAPI.Get($"{(pub ? "public." : "")}favorites.avatars.{group}");
-			return entry != null
-				? JsonConvert.DeserializeObject<Favorites>(entry.AsString)
-				: null;
+			var key   = $"{(pub ? "public." : "")}favorites.avatars.{group}";
+			var entry = await Main.Instance.TableAPI.Get(key);
+			if (entry == null)
+				return new Favorites {
+					Key    = key,
+					Label  = null,
+					Values = Array.Empty<Identifier>()
+				};
+			var result = JsonConvert.DeserializeObject<Favorites>(entry.AsString);
+			result.Key = entry.Key;
+			return result;
 		}
 
 		/// <summary>
@@ -434,14 +443,14 @@ namespace Nox.Avatars.Runtime.Network {
 		/// <param name="pub"></param>
 		/// <returns></returns>
 		public async UniTask<Favorites> AddFavorites(Identifier[] identifier, uint group = 0, bool pub = true) {
-			var e = await FetchFavorites();
+			var e = await FetchFavorites(group, pub);
 			e.Values = identifier
 				.Concat(e.Values)
 				.Distinct()
 				.ToArray();
 
 			var entry = await Main.Instance.TableAPI.Set(
-				$"{(pub ? "public." : "")}favorites.avatars.{group}",
+				e.Key,
 				JsonConvert.SerializeObject(e)
 			);
 
@@ -470,13 +479,13 @@ namespace Nox.Avatars.Runtime.Network {
 		/// <param name="pub"></param>
 		/// <returns></returns>
 		public async UniTask<Favorites> RemoveFavorites(Identifier[] identifier, uint group = 0, bool pub = true) {
-			var e = await FetchFavorites();
+			var e = await FetchFavorites(group, pub);
 			e.Values = e.Values
 				.Where(i => !identifier.Contains(i))
 				.ToArray();
 
 			var entry = await Main.Instance.TableAPI.Set(
-				$"{(pub ? "public." : "")}favorites.avatars.{group}",
+				e.Key,
 				JsonConvert.SerializeObject(e)
 			);
 
