@@ -29,7 +29,7 @@ namespace Nox.Avatars.Runtime.Network {
 		public string Server { get; private set; }
 
 		[JsonProperty("release")]
-		public int Release { get; private set; }
+		public ushort Release { get; private set; }
 
 		[JsonProperty("created_at"), JsonConverter(typeof(UnixTimestampToDateTimeConverter))]
 		public DateTime CreatedAt { get; private set; }

@@ -41,9 +41,9 @@ namespace Nox.Avatars {
 		
 		/// <summary>
 		/// Is a <see cref="ushort"/> of the <see cref="IAvatarAsset.Version"/>.
-		/// It can be -1, when the avatar has no assets.
+		/// It is <see cref="ushort.MaxValue"/> when the avatar has no assets.
 		/// </summary>
-		public int Release { get; }
+		public ushort Release { get; }
 
 		/// <summary>
 		/// The date and time when the avatar was created.
