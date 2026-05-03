@@ -4,7 +4,6 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using Nox.Avatars;
 using Nox.CCK.Build;
-using Nox.CCK.Utils;
 using UnityEngine;
 using Logger = Nox.CCK.Utils.Logger;
 
@@ -38,7 +37,7 @@ namespace Nox.CCK.Avatars
 				return false;
 
 			var descriptor = avatar.Descriptor;
-			var gameObject = descriptor.GetAnchor();
+			var gameObject = descriptor.Anchor;
 
 			if (!gameObject)
 			{
@@ -47,7 +46,7 @@ namespace Nox.CCK.Avatars
 			}
 
 			// Disable ApplyRootMotion on the Animator to avoid unwanted movements
-			var animator = descriptor.GetAnimator();
+			var animator = descriptor.Animator;
 			if (!animator)
 			{
 				Logger.LogError("Avatar descriptor Animator is null.");
@@ -74,7 +73,7 @@ namespace Nox.CCK.Avatars
 				}
 			}
 
-			descriptor.FindModules();
+			descriptor.RefreshModules();
 
 			if (OnCheckRequest == null)
 				Logger.LogWarning("No OnCheckRequest is set, the avatar preparation will proceed without external validation.");
@@ -86,7 +85,7 @@ namespace Nox.CCK.Avatars
 				return false;
 			}
 
-			descriptor.FindModules();
+			descriptor.RefreshModules();
 
 			if (token.IsCancellationRequested)
 				return false;
@@ -130,7 +129,7 @@ namespace Nox.CCK.Avatars
 
 			progress?.Invoke(0.8f);
 
-			var modules = descriptor.GetModules();
+			var modules = descriptor.Modules;
 			var moduleArray = modules.ToArray();
 
 			// Initialisation des modules avec progression

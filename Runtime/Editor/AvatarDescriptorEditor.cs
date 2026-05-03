@@ -26,7 +26,7 @@ namespace Nox.Avatars.Runtime.Editor {
 
 		private void OnHierarchyChanged() {
 			if (Application.isPlaying || !module) return;
-			module.Modules = module.FindModules();
+			module.Modules = module.RefreshModules();
 			serializedObject.Update();
 			if (_root != null) _root.Bind(serializedObject);
 			serializedObject.ApplyModifiedProperties();

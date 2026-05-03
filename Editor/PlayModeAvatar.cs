@@ -44,7 +44,7 @@ namespace Nox.Avatars.Editor {
 			Logger.Log("Avatar starting...");
 
 			// Temporarily disable rigging to prevent TransformStreamHandle errors during setup
-			var animator = descriptor.GetAnimator();
+			var animator = descriptor.Animator;
 			if (!animator) {
 				Logger.LogError("Animator component missing in avatar descriptor, destroying avatar.");
 				enabled = false;

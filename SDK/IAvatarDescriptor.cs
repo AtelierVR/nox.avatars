@@ -6,7 +6,7 @@ namespace Nox.Avatars {
 		/// Get the root GameObject of the avatar.
 		/// </summary>
 		/// <returns></returns>
-		public GameObject GetAnchor();
+		public GameObject Anchor { get; }
 
 		/// <summary>
 		/// Gets the avatar modules of a specific type.
@@ -21,17 +21,17 @@ namespace Nox.Avatars {
 		/// Gets all avatar modules.
 		/// </summary>
 		/// <returns></returns>
-		public IAvatarModule[] GetModules();
+		public IAvatarModule[] Modules { get; }
 
 		/// <summary>
 		/// Updates all avatar modules.
 		/// </summary>
-		public IAvatarModule[] FindModules();
+		public IAvatarModule[] RefreshModules();
 
 		/// <summary>
 		/// Gets the animator component associated with this avatar descriptor.
 		/// </summary>
 		/// <returns></returns>
-		public Animator GetAnimator();
+		public Animator Animator { get; }
 	}
 }

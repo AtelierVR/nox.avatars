@@ -8,7 +8,7 @@ using Nox.CCK.Utils;
 
 namespace Nox.CCK.Avatars {
 	public sealed class AvatarDescriptor : MonoBehaviour, IAvatarDescriptor, ICompilable {
-		public GameObject GetAnchor()
+		public GameObject Anchor
 			=> gameObject;
 
 		#region Publisher
@@ -46,11 +46,8 @@ namespace Nox.CCK.Avatars {
 		private Animator _animator;
 
 		// ReSharper disable Unity.PerformanceAnalysis
-		public Animator GetAnimator() {
-			if (!_animator)
-				_animator = GetComponent<Animator>();
-			return _animator;
-		}
+		public Animator Animator
+			=> _animator ??= GetComponent<Animator>();
 
 		#endregion Animator
 
@@ -62,20 +59,20 @@ namespace Nox.CCK.Avatars {
 		public T[] GetModules<T>() where T : IAvatarModule
 			=> Modules.OfType<T>().ToArray();
 
-		public IAvatarModule[] GetModules()
+		IAvatarModule[] IAvatarDescriptor.Modules
 			=> Modules;
 
 		// ReSharper disable Unity.PerformanceAnalysis
 		public static IAvatarModule[] FindModules(IAvatarDescriptor descriptor) {
-			var modules = new HashSet<IAvatarModule>(descriptor.GetModules());
-			var root    = descriptor.GetAnchor();
+			var modules = new HashSet<IAvatarModule>(descriptor.Modules);
+			var root    = descriptor.Anchor;
 			modules.UnionWith(root.GetComponents<IAvatarModule>());
 			modules.UnionWith(root.GetComponentsInChildren<IAvatarModule>(true));
 			return modules.ToArray();
 		}
 
 		// ReSharper disable Unity.PerformanceAnalysis
-		public IAvatarModule[] FindModules()
+		public IAvatarModule[] RefreshModules()
 			=> Modules = FindModules(this);
 
 		#endregion Modules
