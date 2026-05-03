@@ -26,7 +26,8 @@ namespace Nox.Avatars.Runtime
 			var avatar = new AssetBundleRuntimeAvatar
 			{
 				Path = path,
-				CacheId = nameof(AssetBundleRuntimeAvatar) + "_" + Guid.NewGuid()
+				CacheId = nameof(AssetBundleRuntimeAvatar) + "_" + Guid.NewGuid(),
+				Arguments = arguments
 			};
 
 			try
