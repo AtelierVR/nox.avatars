@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Cysharp.Threading.Tasks;
 using Nox.Avatars.Pipeline;
 using Nox.Avatars.Editor;
@@ -80,6 +81,19 @@ namespace Nox.Avatars.Runtime.Editor {
 		public string GetTitle()
 			=> "Avatar Builder";
 
+		public IToolOption[] GetOptions() => new IToolOption[] {
+			new DefaultToolOption("Publisher", GoToPublisher),
+		};
+
+		private void GoToPublisher() {
+			var panel = _panel.API.ModAPI.GetMod("nox.avatars")
+				?.GetInstances<IPanel>()
+				.FirstOrDefault(p => p.GetPath().SequenceEqual(new[] { "avatar", "publisher" }));
+			if (panel == null) return;
+			_window.SetActive(panel);
+			_window.Repaint();
+		}
+
 		public void OnDestroy() {
 			AvatarDescriptorHelper.OnAvatarSelected.RemoveListener(OnAvatarSelected);
 			AvatarNotificationHelper.OnNotificationsChanged.RemoveListener(OnNotificationsChanged);
@@ -100,6 +114,7 @@ namespace Nox.Avatars.Runtime.Editor {
 			=> AvatarDescriptorHelper.SetCurrentAvatar(evt.newValue);
 
 		private void OnNotificationsChanged(AvatarNotification[] arg0) {
+			if (_buildButton == null || _notificationsList == null) return;
 			var avatar = AvatarDescriptorHelper.CurrentAvatar;
 			_buildButton.SetEnabled(avatar && AvatarNotificationHelper.Allowed);
 			_notificationsList.Clear();
@@ -107,7 +122,7 @@ namespace Nox.Avatars.Runtime.Editor {
 			foreach (var notification in arg0) {
 				var element = prefab.CloneTree();
 
-				element.AddToClassList(notification.Type.ToString().ToLowerInvariant());
+				element.AddToClassList("notification-" + notification.Type.ToString().ToLowerInvariant());
 				var content = element.Q<VisualElement>("content");
 
 				content.Clear();

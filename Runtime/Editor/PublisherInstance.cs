@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Cysharp.Threading.Tasks;
 using Nox.Avatars.Editor;
 using Nox.CCK.Avatars;
@@ -86,6 +87,19 @@ namespace Nox.Avatars.Runtime.Editor {
 
 		public string GetTitle()
 			=> "Avatar Publisher";
+
+		public IToolOption[] GetOptions() => new IToolOption[] {
+			new DefaultToolOption("Builder", GoToBuilder),
+		};
+
+		private void GoToBuilder() {
+			var panel = _panel.API.ModAPI.GetMod("nox.avatars")
+				?.GetInstances<IPanel>()
+				.FirstOrDefault(p => p.GetPath().SequenceEqual(new[] { "avatar", "builder" }));
+			if (panel == null) return;
+			_window.SetActive(panel);
+			_window.Repaint();
+		}
 
 		public void OnDestroy() {
 			AvatarDescriptorHelper.OnAvatarSelected.RemoveListener(OnAvatarSelected);
