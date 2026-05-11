@@ -18,9 +18,11 @@ namespace Nox.Avatars.Editor {
 				return;
 			}
 
-			var avatars = Object.FindObjectsByType<AvatarDescriptor>(FindObjectsSortMode.None);
+			var avatars    = Object.FindObjectsByType<AvatarDescriptor>(FindObjectsSortMode.None);
+			var humanoids  = Object.FindObjectsByType<Animator>(FindObjectsSortMode.None);
+			var candidates = System.Array.FindAll(humanoids, a => a.avatar != null && a.avatar.isHuman);
 
-			AvatarNotificationHelper.Add(
+			AvatarNotificationHelper.Set(
 				new AvatarNotification(
 					NotificationUid,
 					NotificationType.Warning,
@@ -32,18 +34,21 @@ namespace Nox.Avatars.Editor {
 							new(
 								new[] { "avatar.editor.notification.no_avatar_descriptor.action.select_first" },
 								() => Selection.activeGameObject = avatars[0].gameObject
-							),
-							new(
-								new[] { "avatar.editor.notification.no_avatar_descriptor.action.create_new" },
-								() => Selection.activeGameObject = new GameObject("AvatarDescriptor", typeof(AvatarDescriptor))
 							)
 						}
-						: new AvatarAction[] {
-							new(
-								new[] { "avatar.editor.notification.no_avatar_descriptor.action.create" },
-								() => Selection.activeGameObject = new GameObject("AvatarDescriptor", typeof(AvatarDescriptor))
-							)
-						}
+						: candidates.Length > 0
+							? new AvatarAction[] {
+								new(
+									new[] { "avatar.editor.notification.no_avatar_descriptor.action.select_humanoids" },
+									() => {
+										var objects = new Object[candidates.Length];
+										for (var i = 0; i < candidates.Length; i++)
+											objects[i] = candidates[i].gameObject;
+										Selection.objects = objects;
+									}
+								)
+							}
+							: System.Array.Empty<AvatarAction>()
 				)
 			);
 		}

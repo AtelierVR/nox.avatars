@@ -1,6 +1,7 @@
 using Nox.CCK.Avatars;
 using UnityEngine.Events;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using System.Linq;
 using Logger = Nox.CCK.Utils.Logger;
@@ -13,8 +14,10 @@ namespace Nox.Avatars.Editor {
 
 		[InitializeOnLoadMethod]
 		private static void Initialize() {
-			Selection.selectionChanged         += OnSelectionChanged;
-			EditorApplication.hierarchyChanged += Find;
+			Selection.selectionChanged                    += OnSelectionChanged;
+			EditorApplication.hierarchyChanged            += Find;
+			EditorSceneManager.sceneOpened                += (_, _) => ForceFind();
+			EditorSceneManager.activeSceneChangedInEditMode += (_, _) => ForceFind();
 			Find();
 		}
 
@@ -27,10 +30,15 @@ namespace Nox.Avatars.Editor {
 				SetCurrentAvatar(avatarDescriptor);
 		}
 
+		public static void ForceFind() {
+			SetCurrentAvatar(null);
+			Find();
+		}
+
 		public static void Find() {
 			try {
 				// Vérifier si CurrentAvatar est null, Missing ou valide et actif
-				if (CurrentAvatar && CurrentAvatar && CurrentAvatar.gameObject.activeInHierarchy) return;
+				if (CurrentAvatar != null && CurrentAvatar && CurrentAvatar.gameObject.activeInHierarchy) return;
 				var activeAvatars = Object.FindObjectsByType<AvatarDescriptor>(FindObjectsSortMode.None)
 					.Where(avatar => avatar.gameObject.activeInHierarchy)
 					.ToArray();
@@ -41,7 +49,7 @@ namespace Nox.Avatars.Editor {
 		}
 
 		public static void SetCurrentAvatar(AvatarDescriptor newAvatar) {
-			if (CurrentAvatar == newAvatar) return;
+			if (ReferenceEquals(CurrentAvatar, newAvatar)) return;
 			Logger.LogDebug($"Current avatar changed to {(newAvatar ? newAvatar.name : "null")}");
 			CurrentAvatar = newAvatar;
 			OnAvatarSelected?.Invoke(newAvatar);
