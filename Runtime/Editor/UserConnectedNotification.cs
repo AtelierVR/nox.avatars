@@ -1,9 +1,12 @@
 using Nox.Avatars.Editor;
 using Nox.CCK.Mods.Events;
 using Nox.Users;
+using UnityEditor;
 
 namespace Nox.Avatars.Runtime.Editor {
-	public class UserConnectedNotification {
+	public static class UserConnectedNotification {
+		[InitializeOnLoadMethod]
+		private static void OnInitialize() => OnUserUpdated((ICurrentUser)null);
 		private const string NotConnectedUid = "not_connected";
 		private const string ConnectedUid = "connected";
 
