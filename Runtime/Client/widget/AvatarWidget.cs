@@ -35,9 +35,9 @@ namespace Nox.Avatars.Runtime.widget {
 
 		static internal Identifier GetCurrentAvatarIdentifier() {
 			var controller = Main.Instance.ControllerAPI?.Current;
-			return controller is not IControllerAvatar ca
-				? Identifier.Invalid
-				: ca.GetAvatar().Identifier;
+			if (controller is not IControllerAvatar ca) return Identifier.Invalid;
+			var avatar = ca.GetAvatar();
+			return avatar?.Identifier ?? Identifier.Invalid;
 		}
 
 		public async UniTask UpdateContent() {
