@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 776389e82c640c44086d3baf10dd1c7b, type: 3}
   m_Name: lang
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier: Nox.CCK::Nox.CCK.Language.LanguagePack
   languages:
   - IETF: en-US
     entries:
@@ -103,16 +103,32 @@ MonoBehaviour:
       value: "No AvatarDescriptor selected. Please select an AvatarDescriptor."
     - key: avatar.editor.notification.no_avatar_descriptor.action.select_first
       value: "Select"
-    - key: avatar.editor.notification.no_avatar_descriptor.action.create_new
-      value: "New"
-    - key: avatar.editor.notification.no_avatar_descriptor.action.create
-      value: "Create"
+    - key: avatar.editor.notification.no_avatar_descriptor.action.select_humanoids
+      value: "Select Humanoid Rigs"
     - key: avatar.editor.notification.play_mode
       value: "Avatar Builder cannot be used in Play Mode. Please exit Play Mode to continue."
     - key: avatar.editor.notification.user_not_connected
       value: "You are not logged in. Please log in to access avatar building features."
     - key: avatar.editor.notification.user_connected
       value: "Logged in as {0} ({1})"
+    - key: avatar.editor.notification.no_animator
+      value: "The selected avatar has no Animator component. An Animator is required to build."
+    - key: avatar.editor.notification.not_humanoid
+      value: "The Animator on the selected avatar is not configured as Humanoid. Please set the Rig type to Humanoid."
+    - key: avatar.editor.notification.not_humanoid.action.select
+      value: "Select Avatar"
+    - key: avatar.editor.notification.mesh_rw
+      value: "Mesh \"{0}\" has Read/Write disabled. This may cause issues during the build process."
+    - key: avatar.editor.notification.mesh_rw.action.fix
+      value: "Enable"
+    - key: avatar.editor.notification.mesh_lbsn
+      value: "Mesh \"{0}\" has Legacy Blend Shape Normals disabled. This may cause visual issues with blend shapes."
+    - key: avatar.editor.notification.mesh_lbsn.action.fix
+      value: "Enable"
+    - key: avatar.editor.notification.missing_components
+      value: "{0} missing component(s) found on the avatar. These should be removed before building."
+    - key: avatar.editor.notification.missing_components.action.remove
+      value: "Remove All"
     - key: avatar.builder.result.success
       value: "Avatar build completed successfully!"
     - key: avatar.title
