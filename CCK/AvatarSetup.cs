@@ -7,10 +7,8 @@ using Nox.CCK.Build;
 using UnityEngine;
 using Logger = Nox.CCK.Utils.Logger;
 
-namespace Nox.CCK.Avatars
-{
-	public static class AvatarSetup
-	{
+namespace Nox.CCK.Avatars {
+	public static class AvatarSetup {
 		private static readonly Type[] IncompatibleComponents = {
 			typeof(AudioListener),
 			typeof(Camera),
@@ -22,10 +20,8 @@ namespace Nox.CCK.Avatars
 
 		public static Func<IAvatarDescriptor, bool> OnCheckRequest;
 
-		public static async UniTask<bool> Prepare(IRuntimeAvatar avatar, Action<float> progress = null, CancellationToken token = default)
-		{
-			if (avatar == null)
-			{
+		public static async UniTask<bool> Prepare(IRuntimeAvatar avatar, Action<float> progress = null, CancellationToken token = default) {
+			if (avatar == null) {
 				Logger.LogError("Avatar descriptor is null.");
 				return false;
 			}
@@ -39,16 +35,14 @@ namespace Nox.CCK.Avatars
 			var descriptor = avatar.Descriptor;
 			var gameObject = descriptor.Anchor;
 
-			if (!gameObject)
-			{
+			if (!gameObject) {
 				Logger.LogError("Avatar descriptor root GameObject is null.");
 				return false;
 			}
 
 			// Disable ApplyRootMotion on the Animator to avoid unwanted movements
 			var animator = descriptor.Animator;
-			if (!animator)
-			{
+			if (!animator) {
 				Logger.LogError("Avatar descriptor Animator is null.");
 				return false;
 			}
@@ -56,18 +50,15 @@ namespace Nox.CCK.Avatars
 			animator.applyRootMotion = false;
 
 			// check is Humanoid and has Avatar
-			if (animator.isHuman && animator.avatar)
-			{
+			if (animator.isHuman && animator.avatar) {
 				// Ensure the avatar is valid
-				if (!animator.avatar.isValid)
-				{
+				if (!animator.avatar.isValid) {
 					Logger.LogError("Animator avatar is not valid.");
 					return false;
 				}
 
 				// Ensure the avatar is properly configured
-				if (!animator.avatar.isHuman)
-				{
+				if (!animator.avatar.isHuman) {
 					Logger.LogError("Animator avatar is not configured as Humanoid.");
 					return false;
 				}
@@ -79,8 +70,7 @@ namespace Nox.CCK.Avatars
 				Logger.LogWarning("No OnCheckRequest is set, the avatar preparation will proceed without external validation.");
 			var valid = OnCheckRequest?.Invoke(descriptor) ?? true;
 
-			if (!valid)
-			{
+			if (!valid) {
 				Logger.LogError("A mod asked to cancel the avatar preparation.");
 				return false;
 			}
@@ -93,12 +83,10 @@ namespace Nox.CCK.Avatars
 			progress?.Invoke(0.1f);
 
 			// Disable incompatible components
-			foreach (var type in IncompatibleComponents)
-			{
+			foreach (var type in IncompatibleComponents) {
 				var components = gameObject.GetComponentsInChildren(type, true);
 				foreach (var comp in components)
-					switch (comp)
-					{
+					switch (comp) {
 						case Behaviour behaviour:
 							behaviour.enabled = false;
 							break;
@@ -114,8 +102,7 @@ namespace Nox.CCK.Avatars
 				.ToArray();
 
 			var compiler = new Compiler(compilable);
-			compiler.OnCompilableCompiled.AddListener((e, i, l) =>
-			{
+			compiler.OnCompilableCompiled.AddListener((e, i, l) => {
 				Logger.LogDebug($"Compiled {e.GetType().Name}");
 				var compileProgress = 0.2f + 0.5f * (i + 1) / l;
 				progress?.Invoke(compileProgress);
@@ -130,23 +117,25 @@ namespace Nox.CCK.Avatars
 			progress?.Invoke(0.8f);
 
 			var modules = descriptor.Modules;
-			var moduleArray = modules.ToArray();
+			Array.Sort(modules, (a, b) => a.Priority.CompareTo(b.Priority));
 
-			// Initialisation des modules avec progression
-			for (var i = 0; i < moduleArray.Length; i++)
-			{
-				if (token.IsCancellationRequested)
-					return false;
+			// Initialisation des modules en 3 phases : Pre → Init → Post
+			var phases = Enum.GetValues(typeof(AvatarModulePhase)).Cast<AvatarModulePhase>().ToArray();
 
-				if (!await moduleArray[i].Setup(avatar))
-				{
-					Logger.LogError($"Module {moduleArray[i].GetType().Name} failed to initialize.");
-					return false;
+			for (var p = 0; p < phases.Length; p++) {
+				for (var i = 0; i < modules.Length; i++) {
+					if (token.IsCancellationRequested)
+						return false;
+
+					if (await modules[i].Setup(avatar, phases[p], token)) {
+						Logger.LogDebug($"Module {modules[i].GetType().Name}:{phases[p]} initialized successfully.");
+					} else {
+						Logger.LogError($"Module {modules[i].GetType().Name}:{phases[p]} failed to initialize.");
+						return false;
+					}
+
+					progress?.Invoke(0.8f + 0.2f * (i + 1 + p * modules.Length) / (phases.Length * modules.Length));
 				}
-
-				// Rapporter la progression (80% à 100% pour les modules)
-				var moduleProgress = 0.8f + 0.2f * (i + 1) / moduleArray.Length;
-				progress?.Invoke(moduleProgress);
 			}
 
 			progress?.Invoke(1.0f);
