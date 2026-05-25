@@ -15,7 +15,7 @@
     "Nox.Avatars.Runtime.Modules",
     "Nox.CCK.",
     "Nox.Network",
-    "Nox.Tables",
+    "Nox.Table",
     "Nox.Search",
     "Nox.UI",
     "Nox.Avatars.Parameters",
