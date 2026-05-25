@@ -1,5 +1,6 @@
-{
-  "name": "nox.avatars",
-  "displayName": "Nox - Avatars",
-  "version": "1.0.0"
+﻿{
+    "name":  "nox.avatars",
+    "displayName":  "Nox - Avatars",
+    "version":  "1.0.0",
+    "description":  "Avatar system for loading, displaying, and animating player avatars in Nox."
 }
