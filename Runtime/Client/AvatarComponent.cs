@@ -130,7 +130,7 @@ namespace Nox.Avatars.Runtime.client {
 			);
 
 			if (!string.IsNullOrEmpty(avatar.Description)) {
-				descriptionText.UpdateText("avatar.description", new[] { avatar.Description });
+				descriptionText.SetMarkdown(avatar.Description);
 				descriptionContainer.SetActive(true);
 			} else
 				descriptionContainer.SetActive(false);

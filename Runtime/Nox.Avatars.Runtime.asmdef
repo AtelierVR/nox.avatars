@@ -27,7 +27,8 @@
     "Nox.AssetBundles",
     "Nox.CCK.Users",
     "Nox.Settings",
-    "Nox.CCK.Settings"
+    "Nox.CCK.Settings",
+    "Unity.TextMeshPro"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],
