@@ -169,3 +169,15 @@ MonoBehaviour:
       value: "Remove from Fav."
     - key: avatar.favorite.star
       value: "Remove from Fav."
+    - key: settings.entry.avatar.general.queue.label
+      value: "Avatar Load Queue"
+    - key: settings.entry.avatar.general.reload_avatar.label
+      value: "Avatar Reload"
+    - key: settings.entry.avatar.general.reload_avatar.action
+      value: "Reload"
+    - key: settings.page.avatar.title
+      value: "Avatar Settings"
+    - key: settings.page.avatar.label
+      value: "Avatar"
+    - key: settings.group.avatar.general.label
+      value: "General"

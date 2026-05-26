@@ -25,5 +25,12 @@ namespace Nox.Avatars.Controllers {
 		/// <param name="runtimeAvatar"></param>
 		/// <returns></returns>
 		public UniTask<bool> SetAvatar(IRuntimeAvatar runtimeAvatar);
+
+		/// <summary>
+		/// Reload the current avatar of the controller.
+		/// </summary>
+		/// <param name="progress"></param>
+		/// <returns></returns>
+		public UniTask<IRuntimeAvatar> ReloadAvatar(Action<string, float> progress = null);
 	}
 }

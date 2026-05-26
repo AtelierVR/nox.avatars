@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using Nox.Avatars.Runtime.Settings;
 using Nox.CCK.Utils;
 using UnityEngine.Events;
 
@@ -15,8 +16,6 @@ namespace Nox.Avatars.Runtime
         public static readonly UnityEvent<IRuntimeAvatar> OnAdded = new();
         public static readonly UnityEvent<IRuntimeAvatar> OnRemoved = new();
 
-        // Système de file d'attente pour limiter le nombre de chargements simultanés
-        private static readonly SemaphoreSlim LoadingSemaphore = new SemaphoreSlim(3, 3);
         private static int _currentLoadingCount = 0;
 
         /// <summary>
@@ -25,11 +24,21 @@ namespace Nox.Avatars.Runtime
         public static int CurrentLoadingCount
             => _currentLoadingCount;
 
-        /// <summary>
-        /// Nombre maximum d'avatars pouvant être chargés simultanément
-        /// </summary>
-        public static int MaxConcurrentLoads
-            => 3;
+        private static async UniTask EnterLoadSlot(CancellationToken token) {
+            while (true) {
+                await UniTask.WaitUntil(
+                    () => Volatile.Read(ref _currentLoadingCount) < AvatarQueueSizeSetting.Value,
+                    cancellationToken: token
+                );
+
+                var next = Interlocked.Increment(ref _currentLoadingCount);
+                if (next <= AvatarQueueSizeSetting.Value)
+                    return;
+
+                Interlocked.Decrement(ref _currentLoadingCount);
+                await UniTask.Yield(PlayerLoopTiming.Update, token);
+            }
+        }
 
         internal static void InvokeAdded(IRuntimeAvatar runtimeAvatar)
         {
@@ -67,14 +76,12 @@ namespace Nox.Avatars.Runtime
         [NoxPublic(NoxAccess.Method)]
         public static async UniTask<AssetBundleRuntimeAvatar> LoadFromPath(string path, Dictionary<string, object> arguments = null, Action<float> progress = null, CancellationToken token = default)
         {
-            // Attendre qu'un slot de chargement soit disponible
-            await LoadingSemaphore.WaitAsync(token);
+            await EnterLoadSlot(token);
             arguments ??= new Dictionary<string, object>();
 
             try
             {
-                Interlocked.Increment(ref _currentLoadingCount);
-                Logger.Log($"Loading avatar from path: {path} (Queue: {_currentLoadingCount}/{MaxConcurrentLoads})");
+                Logger.Log($"Loading avatar from path: {path} (Queue: {_currentLoadingCount}/{AvatarQueueSizeSetting.Value})");
 
                 var avatar = await AssetBundleRuntimeAvatar.Load(path, arguments, progress, token);
                 if (avatar == null)
@@ -89,21 +96,18 @@ namespace Nox.Avatars.Runtime
             finally
             {
                 Interlocked.Decrement(ref _currentLoadingCount);
-                LoadingSemaphore.Release();
             }
         }
 
         [NoxPublic(NoxAccess.Method)]
         public static async UniTask<AssetRuntimeAvatar> LoadFromAssets(ResourceIdentifier path, Dictionary<string, object> arguments = null, Action<float> progress = null, CancellationToken token = default)
         {
-            // Attendre qu'un slot de chargement soit disponible
-            await LoadingSemaphore.WaitAsync(token);
+            await EnterLoadSlot(token);
             arguments ??= new Dictionary<string, object>();
 
             try
             {
-                Interlocked.Increment(ref _currentLoadingCount);
-                Logger.Log($"Loading avatar from assets: {path} (Queue: {_currentLoadingCount}/{MaxConcurrentLoads})");
+                Logger.Log($"Loading avatar from assets: {path} (Queue: {_currentLoadingCount}/{AvatarQueueSizeSetting.Value})");
 
                 var avatar = await AssetRuntimeAvatar.Load(path, arguments, progress, token);
 
@@ -119,7 +123,6 @@ namespace Nox.Avatars.Runtime
             finally
             {
                 Interlocked.Decrement(ref _currentLoadingCount);
-                LoadingSemaphore.Release();
             }
         }
     }

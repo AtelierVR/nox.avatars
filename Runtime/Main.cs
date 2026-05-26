@@ -13,10 +13,13 @@ using Nox.CCK.Utils;
 using Nox.Controllers;
 using Nox.Network;
 using Nox.Search;
+using Nox.Settings;
 using Nox.Tables;
 using Nox.Users;
 using UnityEngine;
 using UnityEngine.Events;
+using Nox.Avatars.Runtime.Settings;
+using SettingsHandler = Nox.Settings.IHandler;
 
 namespace Nox.Avatars.Runtime
 {
@@ -28,6 +31,7 @@ namespace Nox.Avatars.Runtime
         internal CacheManager Cache;
         private Search.Search _search;
         private LanguagePack _lang;
+        private SettingsHandler[] _settings = Array.Empty<SettingsHandler>();
 
         public static INetworkAPI NetworkAPI
             => Instance.CoreAPI.ModAPI
@@ -54,6 +58,11 @@ namespace Nox.Avatars.Runtime
                        .GetMod("controller")
                        ?.GetInstance<IControllerAPI>();
 
+        internal ISettingAPI SettingAPI
+            => Instance.CoreAPI.ModAPI
+                       .GetMod("settings")
+                       ?.GetInstance<ISettingAPI>();
+
         public void OnInitializeMain(IMainModCoreAPI api)
         {
             Instance = this;
@@ -68,6 +77,14 @@ namespace Nox.Avatars.Runtime
             Network = new Network.Network();
             Cache = new CacheManager();
             _search = new Search.Search();
+
+            _settings = new SettingsHandler[] {
+                new AvatarQueueSizeSetting(),
+                new ReloadControllerAvatarSetting()
+            };
+
+            foreach (var setting in _settings)
+                SettingAPI?.Add(setting);
         }
 
         private bool OnCheckRequest(IAvatarDescriptor descriptor)
@@ -84,6 +101,10 @@ namespace Nox.Avatars.Runtime
 
         public void OnDisposeMain()
         {
+            foreach (var setting in _settings)
+                SettingAPI?.Remove(setting.GetPath());
+            _settings = Array.Empty<SettingsHandler>();
+
             AvatarSetup.OnCheckRequest = null;
             LanguageManager.RemovePack(_lang);
             Cache?.Dispose();
