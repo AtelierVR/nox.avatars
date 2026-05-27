@@ -12,16 +12,16 @@ namespace Nox.Avatars.Runtime.Network {
 		internal ISearchRequest Request;
 
 		[JsonProperty("total")]
-		public uint Total { get; }
+		public uint Total { get; private set; }
 
 		[JsonProperty("offset")]
-		public uint Offset { get; }
+		public uint Offset { get; private set; }
 
 		[JsonProperty("limit")]
-		public uint Limit { get; }
+		public uint Limit { get; private set; }
 
 		[JsonProperty("items")]
-		public Avatar[] Items { get; }
+		public Avatar[] Items { get; private set; }
 
 		IAvatar[] ISearchResponse.Items
 			=> Items.ToArray<IAvatar>();
