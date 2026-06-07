@@ -41,7 +41,7 @@
       "version": ">=1.0.0"
     },
     {
-      "id": "table",
+      "id": "tables",
       "type": "depends",
       "version": ">=1.0.0"
     },
