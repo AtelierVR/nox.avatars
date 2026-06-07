@@ -28,32 +28,50 @@
     {
       "id": "network",
       "type": "depends",
-      "version": ">=1.0.0"
+      "version": ">=1.0.0",
+      "register": "git+https://github.com/AtelierVR/nox.network.git"
     },
     {
       "id": "ui",
       "type": "depends",
-      "version": ">=1.0.0"
+      "version": ">=1.0.0",
+      "register": "git+https://github.com/AtelierVR/nox.ui.git"
     },
     {
       "id": "search",
       "type": "depends",
-      "version": ">=1.0.0"
+      "version": ">=1.0.0",
+      "register": "git+https://github.com/AtelierVR/nox.search.git"
     },
     {
       "id": "tables",
       "type": "depends",
-      "version": ">=1.0.0"
+      "version": ">=1.0.0",
+      "register": "git+https://github.com/AtelierVR/nox.table.git"
     },
     {
       "id": "users",
       "type": "depends",
-      "version": ">=1.0.0"
+      "version": ">=1.0.0",
+      "register": "git+https://github.com/AtelierVR/nox.users.git"
     },
     {
       "id": "controller",
       "type": "depends",
-      "version": ">=1.0.0"
+      "version": ">=1.0.0",
+      "register": "git+https://github.com/AtelierVR/nox.controllers.git"
+    },
+    {
+      "id": "nox.avatars.modules",
+      "type": "depends",
+      "version": ">=1.0.0",
+      "register": "git+https://github.com/AtelierVR/nox.avatars.modules.git"
+    },
+    {
+      "id": "com.unity.animation.rigging",
+      "type": "depends",
+      "version": ">=1.4.0",
+      "register": "upm+com.unity.animation.rigging@1.4.1"
     }
   ],
   "constraints": [
