@@ -23,7 +23,6 @@
       "website": "https://hactazia.fr/"
     }
   ],
-  "contributors": [],
   "relations": [
     {
       "id": "network",
@@ -96,9 +95,5 @@
     "client": [
       "Nox.Avatars.Runtime.Client"
     ]
-  },
-  "references": [],
-  "sides": [],
-  "permissions": [],
-  "kernel": true
+  }
 }
