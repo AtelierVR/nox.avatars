@@ -28,8 +28,11 @@ namespace Nox.Avatars.Runtime.Network {
 		[JsonProperty("server")]
 		public string Server { get; private set; }
 
-		[JsonProperty("release")]
-		public ushort Release { get; private set; }
+		[JsonProperty("release"), JsonConverter(typeof(ReleaseConverter))]
+		public Release Release { get; private set; }
+		
+		IRelease IAvatar.Release
+			=> Release;
 
 		[JsonProperty("created_at"), JsonConverter(typeof(UnixTimestampToDateTimeConverter))]
 		public DateTime CreatedAt { get; private set; }

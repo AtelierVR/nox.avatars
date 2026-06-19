@@ -1,6 +1,5 @@
 using System;
 using Nox.CCK.Utils;
-using Nox.Users;
 
 namespace Nox.Avatars {
 	public interface IAvatar {
@@ -40,10 +39,10 @@ namespace Nox.Avatars {
 		public string[] Tags { get; }
 		
 		/// <summary>
-		/// Is a <see cref="ushort"/> of the <see cref="IAvatarAsset.Version"/>.
-		/// It is <see cref="ushort.MaxValue"/> when the avatar has no assets.
+		/// The release version of the avatar.
+		/// When <see cref="IRelease.Value"/> is negative, the avatar has no assets.
 		/// </summary>
-		public ushort Release { get; }
+		public IRelease Release { get; }
 
 		/// <summary>
 		/// The date and time when the avatar was created.
