@@ -16,6 +16,7 @@
     "Nox.Network",
     "Nox.Table",
     "Nox.Search",
+    "Nox.CCK.Search",
     "Nox.UI",
     "Nox.Avatars.Parameters",
     "Nox.Editor.Panel",
