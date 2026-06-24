@@ -107,6 +107,7 @@ namespace Nox.Avatars.Runtime.Editor {
 		}
 
 		private void OnAvatarSelected(AvatarDescriptor arg0) {
+			if (_selectedField == null || _buildButton == null || _platformEnum == null) return;
 			_selectedField.SetValueWithoutNotify(arg0);
 			_buildButton.SetEnabled(arg0 && AvatarNotificationHelper.Allowed);
 			_platformEnum.SetValueWithoutNotify(!arg0 ? Platform.None : arg0.target);
@@ -250,9 +251,9 @@ namespace Nox.Avatars.Runtime.Editor {
 			if (_content != null)
 				return _content;
 
-			var root = _panel.API.AssetAPI
-				.GetAsset<VisualTreeAsset>("panels/builder.uxml")
-				.CloneTree();
+			var asset = _panel.API?.AssetAPI?.GetAsset<VisualTreeAsset>("panels/builder.uxml");
+			if (asset == null) return new VisualElement();
+			var root = asset.CloneTree();
 
 			_selectedField = root.Q<ObjectField>("selected");
 			_notificationsList = root.Q<VisualElement>("notifications");

@@ -55,7 +55,7 @@
       "register": "git+https://github.com/AtelierVR/nox.users.git"
     },
     {
-      "id": "controller",
+      "id": "controllers",
       "type": "depends",
       "version": ">=1.0.0",
       "register": "git+https://github.com/AtelierVR/nox.controllers.git"

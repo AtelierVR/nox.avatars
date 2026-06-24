@@ -55,7 +55,7 @@ namespace Nox.Avatars.Runtime
 
         internal IControllerAPI ControllerAPI
             => Instance.CoreAPI.ModAPI
-                       .GetMod("controller")
+                       .GetMod("controllers")
                        ?.GetInstance<IControllerAPI>();
 
         internal ISettingAPI SettingAPI
