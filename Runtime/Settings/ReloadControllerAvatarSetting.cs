@@ -24,15 +24,14 @@ namespace Nox.Avatars.Runtime.Settings {
 		protected override GameObject GetPrefab()
 			=> Main.Instance.CoreAPI.AssetAPI.GetAsset<GameObject>("settings:prefabs/button.prefab");
 
-		protected override void OnClick(IMenu menu)
+		public override void OnClick(IContext context)
 			=> OnClickAsync().Forget();
 
 		private async UniTask OnClickAsync() {
-			var controller = Main.Instance?.ControllerAPI?.Current as IControllerAvatar;
-			if (controller == null)
-				return;
+            if (Main.Instance?.ControllerAPI?.Current is not IControllerAvatar controller)
+                return;
 
-			SetInteractable(false);
+            SetInteractable(false);
 			try {
 				await controller.ReloadAvatar();
 			} finally {
