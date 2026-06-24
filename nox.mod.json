@@ -71,6 +71,12 @@
       "type": "depends",
       "version": ">=1.4.0",
       "register": "upm+com.unity.animation.rigging@1.4.1"
+    },
+    {
+      "id": "settings",
+      "type": "depends",
+      "version": ">=1.0.0",
+      "register": "git+https://github.com/AtelierVR/nox.settings.git"
     }
   ],
   "constraints": [
@@ -81,6 +87,10 @@
     {
       "type": "after",
       "id": "search"
+    },
+    {
+      "type": "after",
+      "id": "settings"
     }
   ],
   "entrypoints": {
