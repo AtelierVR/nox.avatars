@@ -20,13 +20,18 @@ using IPanel = Nox.Editor.Panel.IPanel;
 namespace Nox.Avatars.Runtime.Editor {
 	public class BuilderPanel : IEditorModInitializer, IPanel {
 		private static readonly string[] PanelPath = { "avatar", "builder" };
+		public static BuilderPanel Panel { get; private set; }
 		internal IEditorModCoreAPI API;
 
-		public void OnInitializeEditor(IEditorModCoreAPI api)
-			=> API = api;
+		public void OnInitializeEditor(IEditorModCoreAPI api) {
+			API = api;
+			Panel = this;
+		}
 
-		public void OnDisposeEditor()
-			=> API = null;
+		public void OnDisposeEditor() {
+			API = null;
+			Panel = null;
+		}
 
 		public string[] GetPath()
 			=> PanelPath;
@@ -86,9 +91,7 @@ namespace Nox.Avatars.Runtime.Editor {
 		};
 
 		private void GoToPublisher() {
-			var panel = _panel.API.ModAPI.GetMod("nox.avatars")
-				?.GetInstances<IPanel>()
-				.FirstOrDefault(p => p.GetPath().SequenceEqual(new[] { "avatar", "publisher" }));
+			var panel = PublisherPanel.Panel;
 			if (panel == null) return;
 			_window.SetActive(panel);
 			_window.Repaint();

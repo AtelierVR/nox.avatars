@@ -8,13 +8,18 @@ using IPanel = Nox.Editor.Panel.IPanel;
 namespace Nox.Avatars.Runtime.Editor {
 	public class PublisherPanel : IEditorModInitializer, IPanel {
 		private static readonly string[] PanelPath = { "avatar", "publisher" };
+		public static PublisherPanel Panel { get; private set; }
 		internal IEditorModCoreAPI API;
 
-		public void OnInitializeEditor(IEditorModCoreAPI api)
-			=> API = api;
+		public void OnInitializeEditor(IEditorModCoreAPI api) {
+			API = api;
+			Panel = this;
+		}
 
-		public void OnDisposeEditor()
-			=> API = null;
+		public void OnDisposeEditor() {
+			API = null;
+			Panel = null;
+		}
 
 		public string[] GetPath()
 			=> PanelPath;

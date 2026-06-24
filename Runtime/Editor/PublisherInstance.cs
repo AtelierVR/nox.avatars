@@ -93,9 +93,7 @@ namespace Nox.Avatars.Runtime.Editor {
 		};
 
 		private void GoToBuilder() {
-			var panel = _panel.API.ModAPI.GetMod("nox.avatars")
-				?.GetInstances<IPanel>()
-				.FirstOrDefault(p => p.GetPath().SequenceEqual(new[] { "avatar", "builder" }));
+			var panel = BuilderPanel.Panel;
 			if (panel == null) return;
 			_window.SetActive(panel);
 			_window.Repaint();
