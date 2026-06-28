@@ -20,55 +20,60 @@ namespace Nox.Avatars.Runtime {
 				Arguments = arguments
 			};
 
-			// Load the avatar from the bundle (prefab)
-			var prefab = Main.Instance.CoreAPI.AssetAPI.GetAsset<GameObject>(path);
+			try {
+				// Load the avatar from the bundle (prefab)
+				var prefab = Main.Instance.CoreAPI.AssetAPI.GetAsset<GameObject>(path);
 
-			if (!prefab) {
-				Logger.LogError($"No prefab found in avatar bundle: {path}");
+				if (!prefab) {
+					Logger.LogError($"No prefab found in avatar bundle: {path}");
+					await avatar.Dispose();
+					return null;
+				}
+
+				prefab.SetActive(false);
+
+				progress?.Invoke(.1f);
+
+				avatar.Root = await prefab.InstantiateAsync(
+					progress: new Progress<float>(p => progress?.Invoke(.1f + p * .75f)),
+					cancellationToken: token
+				);
+
+				if (!avatar.Root) {
+					Logger.LogError($"Failed to instantiate avatar prefab from bundle: {path}");
+					await avatar.Dispose();
+					return null;
+				}
+
+				avatar.Id         = avatar.Root.GetEntityId().GetHashCode().ToString();
+				avatar.Root.name  = $"[{avatar.GetType().Name}_{avatar.Id}]";
+				avatar.Descriptor = avatar.Root.GetComponent<IAvatarDescriptor>();
+
+				if (avatar.Descriptor == null) {
+					Logger.LogError($"Avatar prefab does not have a valid descriptor: {path}");
+					await avatar.Dispose();
+					return null;
+				}
+
+				var result = await AvatarSetup.Prepare(
+					avatar,
+					progress: p => progress?.Invoke(.75f + p * .25f),
+					token: token
+				);
+
+				if (!result) {
+					Logger.LogError($"Failed to prepare avatar: {path}");
+					await avatar.Dispose();
+					return null;
+				}
+
+				progress?.Invoke(1);
+
+				return avatar;
+			} catch (OperationCanceledException) {
 				await avatar.Dispose();
 				return null;
 			}
-
-			prefab.SetActive(false);
-
-			progress?.Invoke(.1f);
-
-			avatar.Root = await prefab.InstantiateAsync(
-				progress: new Progress<float>(p => progress?.Invoke(.1f + p * .75f)),
-				cancellationToken: token
-			);
-
-			if (!avatar.Root) {
-				Logger.LogError($"Failed to instantiate avatar prefab from bundle: {path}");
-				await avatar.Dispose();
-				return null;
-			}
-
-			avatar.Id         = avatar.Root.GetEntityId().GetHashCode().ToString();
-			avatar.Root.name  = $"[{avatar.GetType().Name}_{avatar.Id}]";
-			avatar.Descriptor = avatar.Root.GetComponent<IAvatarDescriptor>();
-
-			if (avatar.Descriptor == null) {
-				Logger.LogError($"Avatar prefab does not have a valid descriptor: {path}");
-				await avatar.Dispose();
-				return null;
-			}
-
-			var result = await AvatarSetup.Prepare(
-				avatar,
-				progress: p => progress?.Invoke(.75f + p * .25f),
-				token: token
-			);
-
-			if (!result) {
-				Logger.LogError($"Failed to prepare avatar: {path}");
-				await avatar.Dispose();
-				return null;
-			}
-
-			progress?.Invoke(1);
-
-			return avatar;
 		}
 
 		public override async UniTask Dispose() {
