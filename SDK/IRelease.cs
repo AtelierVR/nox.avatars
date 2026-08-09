@@ -5,7 +5,7 @@ namespace Nox.Avatars {
 	/// </summary>
 	public interface IRelease {
 		/// <summary>
-		/// The release version number. -1 means none available.
+		/// The release version number. <see cref="ushort.MaxValue"/> means none available.
 		/// </summary>
 		public ushort Value { get; }
 
