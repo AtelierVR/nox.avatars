@@ -1,9 +1,9 @@
 using System.Linq;
-using System.Threading;
 using Cysharp.Threading.Tasks;
 using Nox.Avatars.Controllers;
 using Nox.CCK.Avatars;
 using Nox.CCK.Language;
+using Nox.CCK.Network;
 using Nox.CCK.Utils;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -20,7 +20,7 @@ namespace Nox.Avatars.Runtime.client {
 		public TextLanguage label;
 		public RectTransform content;
 		public AvatarPage Page;
-		private CancellationTokenSource _thumbnailTokenSource;
+		private NetworkImage _networkImage;
 		public GameObject descriptionContainer;
 		public TextLanguage descriptionText;
 		public RectTransform actions;
@@ -135,7 +135,7 @@ namespace Nox.Avatars.Runtime.client {
 			} else
 				descriptionContainer.SetActive(false);
 
-			UpdateThumbnail(avatar).Forget();
+			UpdateThumbnail(avatar);
 			UpdateFavoriteState().Forget();
 
 			HoverCache(_isCachedHover);
@@ -143,33 +143,20 @@ namespace Nox.Avatars.Runtime.client {
 			UpdateSelectButton();
 		}
 
-		private async UniTask UpdateThumbnail(IAvatar avatar) {
-			if (_thumbnailTokenSource != null) {
-				_thumbnailTokenSource?.Cancel();
-				_thumbnailTokenSource?.Dispose();
-			}
-
-			_thumbnailTokenSource = new CancellationTokenSource();
-			if (avatar?.Thumbnail != null) {
-				var texture = await Main.NetworkAPI
-					.FetchTexture(avatar.Thumbnail)
-					.AttachExternalCancellation(_thumbnailTokenSource.Token);
-				if (texture) {
-					thumbnail.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), Vector2.zero);
-					withThumbnail.SetActive(true);
-					withoutThumbnail.SetActive(false);
-				} else {
-					thumbnail.sprite = null;
-					withThumbnail.SetActive(false);
-					withoutThumbnail.SetActive(true);
-				}
-			} else {
+		private void UpdateThumbnail(IAvatar avatar) {
+			if (avatar?.Thumbnail == null) {
 				thumbnail.sprite = null;
 				withThumbnail.SetActive(false);
 				withoutThumbnail.SetActive(true);
+				return;
 			}
 
-			_thumbnailTokenSource = null;
+			// Ensure NetworkImage exists on the thumbnail GameObject
+			_networkImage = thumbnail.GetOrAddComponent<NetworkImage>();
+
+			_networkImage.Url = avatar.Thumbnail;
+			withThumbnail.SetActive(true);
+			withoutThumbnail.SetActive(false);
 		}
 
 
