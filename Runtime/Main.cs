@@ -166,9 +166,6 @@ namespace Nox.Avatars.Runtime
         public ISearchRequest MakeSearchRequest()
             => new SearchRequest();
 
-        public IAssetSearchRequest MakeAssetSearchRequest()
-            => new AssetSearchRequest();
-
         public async UniTask<IAvatar> Create(ICreateAvatarRequest data, string server)
             => await Network.Create(CreateAvatarRequest.FromBase(data), server);
 
@@ -179,7 +176,7 @@ namespace Nox.Avatars.Runtime
             => await Network.Delete(identifier);
 
         public async UniTask<IAssetSearchResponse> SearchAssets(Identifier identifier, IAssetSearchRequest data)
-            => await Network.SearchAssets(identifier, AssetSearchRequest.FromBase(data));
+            => await Network.SearchAssets(identifier, AssetSearchRequest.From(data));
 
         public async UniTask<bool> UploadThumbnail(Identifier identifier, Texture2D texture, Action<float> onProgress = null)
             => await Network.UploadThumbnail(identifier, texture, onProgress);

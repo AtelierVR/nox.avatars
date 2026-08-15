@@ -3,6 +3,7 @@ using System.Linq;
 using Cysharp.Threading.Tasks;
 using Newtonsoft.Json;
 using Nox.CCK.Utils;
+using Nox.CCK.Avatars;
 
 namespace Nox.Avatars.Runtime.Network {
 	[Serializable]

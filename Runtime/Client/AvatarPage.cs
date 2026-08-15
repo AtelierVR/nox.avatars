@@ -112,7 +112,7 @@ namespace Nox.Avatars.Runtime.client {
 			_isLoading = true;
 			var searchResult = await Main.Instance.Network.SearchAssets(
 				_identifier,
-				new Network.AssetSearchRequest {
+				new AssetSearchRequest {
 					Limit     = 1,
 					Versions  = new[] { Version },
 					Engines   = new[] { EngineExtensions.CurrentEngine.GetEngineName() },

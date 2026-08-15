@@ -5,6 +5,7 @@ using Nox.Avatars.Runtime.Network;
 using Cysharp.Threading.Tasks;
 using Nox.Avatars.Pipeline;
 using Nox.Avatars.Editor;
+using Nox.CCK.Avatars;
 using Nox.CCK.Utils;
 using UnityEditor;
 using Logger = Nox.CCK.Utils.Logger;

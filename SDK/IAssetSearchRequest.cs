@@ -1,85 +1,39 @@
 namespace Nox.Avatars {
 	public interface IAssetSearchRequest {
 		/// <summary>
-		/// Set the offset for the search results.
-		/// Zero means no offset.
+		/// The offset for the search results.
 		/// </summary>
-		/// <param name="o"></param>
 		/// <returns></returns>
-		public IAssetSearchRequest SetOffset(uint o);
+		public uint Offset { get; set; }
 
 		/// <summary>
-		/// Set the limit for the search results.
-		/// The minimum is 1 and the maximum is defined by the server.
+		/// The limit for the search results.
 		/// </summary>
-		/// <param name="l"></param>
 		/// <returns></returns>
-		public IAssetSearchRequest SetLimit(uint l);
+		public uint Limit { get; set; }
 
 		/// <summary>
-		/// Sets if you want to search for assets that are empty.
+		/// The flag indicating if the search results should include empty assets.
 		/// </summary>
-		/// <param name="showEmpty"></param>
 		/// <returns></returns>
-		public IAssetSearchRequest SetShowEmpty(bool showEmpty);
+		public bool ShowEmpty { get; set; }
 
 		/// <summary>
-		/// Sets the versions to filter the search results.
+		/// The versions to filter the search results.
 		/// </summary>
-		/// <param name="v"></param>
 		/// <returns></returns>
-		public IAssetSearchRequest SetVersions(ushort[] v);
+		public ushort[] Versions { get; set; }
 
 		/// <summary>
-		/// Sets the engines to filter the search results.
-		/// See <see cref="Nox.CCK.Utils.Engine"/> for more information.
+		/// The engines to filter the search results.
 		/// </summary>
-		/// <param name="e"></param>
 		/// <returns></returns>
-		public IAssetSearchRequest SetEngines(string[] e);
+		public string[] Engines { get; set; }
 
 		/// <summary>
-		/// Sets the platforms to filter the search results.
-		/// See <see cref="Nox.CCK.Utils.Platform"/> for more information.
-		/// </summary>
-		/// <param name="p"></param>
-		/// <returns></returns>
-		public IAssetSearchRequest SetPlatforms(string[] p);
-
-		/// <summary>
-		/// Gets the offset for the search results.
+		/// The platforms to filter the search results.
 		/// </summary>
 		/// <returns></returns>
-		public uint GetOffset();
-
-		/// <summary>
-		/// Gets the limit for the search results.
-		/// </summary>
-		/// <returns></returns>
-		public uint GetLimit();
-
-		/// <summary>
-		/// Gets if the search results should include empty assets.
-		/// </summary>
-		/// <returns></returns>
-		public bool GetShowEmpty();
-
-		/// <summary>
-		/// Gets the versions to filter the search results.
-		/// </summary>
-		/// <returns></returns>
-		public ushort[] GetVersions();
-
-		/// <summary>
-		/// Gets the engines to filter the search results.
-		/// </summary>
-		/// <returns></returns>
-		public string[] GetEngines();
-
-		/// <summary>
-		/// Gets the platforms to filter the search results.
-		/// </summary>
-		/// <returns></returns>
-		public string[] GetPlatforms();
+		public string[] Platforms { get; set; }
 	}
 }

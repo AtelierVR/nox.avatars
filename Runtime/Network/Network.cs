@@ -170,7 +170,7 @@ namespace Nox.Avatars.Runtime.Network {
 				return null;
 			}
 
-			var request = await RequestNode.To(address, $"/avatars/{id}/assets{data.ToParams()}");
+			var request = await RequestNode.To(address, $"/avatars/{id}/assets{data}");
 			if (request == null) {
 				Logger.LogError($"Failed to create request for avatar {ide} assets");
 				return null;
