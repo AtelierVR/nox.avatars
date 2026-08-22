@@ -67,6 +67,10 @@ namespace Nox.Avatars.Runtime {
 					return null;
 				}
 
+				// Route all non-voice AudioSources to the avatar channel's mixer track.
+				if (avatar.Root.GetComponent<AvatarAudioGroup>() == null)
+					avatar.Root.AddComponent<AvatarAudioGroup>();
+
 				progress?.Invoke(1);
 
 				return avatar;

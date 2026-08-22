@@ -28,6 +28,8 @@
     "Nox.CCK.Users",
     "Nox.Settings",
     "Nox.CCK.Settings",
+    "Nox.Audio",
+    "Nox.CCK.Audio",
     "Unity.TextMeshPro"
   ],
   "includePlatforms": [],

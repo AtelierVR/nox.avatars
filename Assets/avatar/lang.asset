@@ -181,3 +181,5 @@ MonoBehaviour:
       value: "Avatar"
     - key: settings.group.avatar.general.label
       value: "General"
+    - key: settings.entry.audio.channel.avatar
+      value: "Avatars"

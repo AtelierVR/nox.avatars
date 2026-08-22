@@ -9,7 +9,6 @@ using Nox.CCK.Avatars;
 using Nox.CCK.Utils;
 using UnityEngine;
 using Logger = Nox.CCK.Utils.Logger;
-using Object = UnityEngine.Object;
 
 namespace Nox.Avatars.Runtime
 {
@@ -113,6 +112,10 @@ namespace Nox.Avatars.Runtime
 					await avatar.Dispose();
 					return null;
 				}
+
+				// Route all non-voice AudioSources to the avatar channel's mixer track.
+				if (avatar.Root.GetComponent<AvatarAudioGroup>() == null)
+					avatar.Root.AddComponent<AvatarAudioGroup>();
 
 				progress?.Invoke(1);
 				return avatar;

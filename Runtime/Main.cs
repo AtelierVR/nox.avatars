@@ -20,6 +20,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using Nox.Avatars.Runtime.Settings;
 using SettingsHandler = Nox.Settings.IHandler;
+using Nox.CCK.Audio;
 
 namespace Nox.Avatars.Runtime
 {
@@ -58,6 +59,12 @@ namespace Nox.Avatars.Runtime
                        .GetMod("controllers")
                        ?.GetInstance<IControllerAPI>();
 
+        /// <summary>
+        /// Avatar audio channel. Routes every (non-voice) AudioSource of an avatar
+        /// through its own dedicated mixer track so avatar volume is controllable.
+        /// </summary>
+        static internal ChannelRegister AvatarRegister;
+
         internal ISettingAPI SettingAPI
             => Instance.CoreAPI.ModAPI
                        .GetMod("settings")
@@ -77,6 +84,9 @@ namespace Nox.Avatars.Runtime
             Network = new Network.Network();
             Cache = new CacheManager();
             _search = new Search.Search();
+
+            // Register avatar volume channel, protected from removal.
+            AvatarRegister = new ChannelRegister("avatar", new[] { "general" }, api);
 
             _settings = new SettingsHandler[] {
                 new AvatarQueueSizeSetting(),
@@ -107,6 +117,8 @@ namespace Nox.Avatars.Runtime
 
             AvatarSetup.OnCheckRequest = null;
             LanguageManager.RemovePack(_lang);
+            AvatarRegister?.Dispose();
+            AvatarRegister = null;
             Cache?.Dispose();
             Cache = null;
             _search?.Dispose();
