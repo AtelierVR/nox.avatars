@@ -2,6 +2,7 @@ using Nox.Avatars.Runtime.client;
 using Cysharp.Threading.Tasks;
 using Nox.Avatars.Controllers;
 using Nox.CCK.Language;
+using Nox.CCK.Network;
 using Nox.CCK.Utils;
 using Nox.UI;
 using Nox.UI.Widgets;
@@ -77,23 +78,23 @@ namespace Nox.Avatars.Runtime.widget {
 				return;
 			}
 
-			var banner = await Main.NetworkAPI.FetchTexture(url);
-			if (!banner || banner.height == 0) {
-				_container.SetActive(false);
-				return;
-			}
-
-			_image.sprite = Sprite.Create(
-				banner,
-				new Rect(0, 0, banner.width, banner.height),
-				new Vector2(0.5f, 0.5f)
-			);
-			_ratio.aspectRatio = (float)banner.width / banner.height;
+			// Enable container so NetworkImage can start loading
 			_container.SetActive(true);
+
+			var networkImage = _image.GetOrAddComponent<NetworkImage>();
+			networkImage.OnSuccess.AddListener(texture => {
+				if (texture && texture.height > 0) {
+					_ratio.aspectRatio = (float)texture.width / texture.height;
+				}
+			});
+			networkImage.OnError.AddListener(_ => {
+				_container.SetActive(false);
+			});
+			networkImage.Url = url;
 		}
 
 		public static bool TryMake(IMenu menu, RectTransform parent, out (GameObject, IWidget) values) {
-			if (!(GetCurrentAvatarIdentifier().IsValid())) {
+			if (!GetCurrentAvatarIdentifier().IsValid()) {
 				values = (null, null);
 				return false;
 			}
