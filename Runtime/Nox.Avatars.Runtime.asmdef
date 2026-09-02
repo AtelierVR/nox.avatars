@@ -29,6 +29,7 @@
     "Nox.CCK.Settings",
     "Nox.Audio",
     "Nox.CCK.Audio",
+    "Nox.Avatars.Menus",
     "Unity.TextMeshPro"
   ],
   "includePlatforms": [],

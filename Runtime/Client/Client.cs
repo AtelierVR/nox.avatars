@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Nox.Avatars.Runtime.client;
+using Nox.Avatars.Runtime.radial;
 using Nox.Avatars.Runtime.widget;
 using Cysharp.Threading.Tasks;
 using Nox.CCK.Mods.Cores;
@@ -9,14 +10,35 @@ using Nox.CCK.Mods.Initializers;
 using Nox.UI;
 using Nox.UI.Widgets;
 using UnityEngine;
+using Nox.Controllers;
+using Nox.Avatars.Controllers;
+using UnityEngine.Events;
 
 namespace Nox.Avatars.Runtime {
 
     public class Client : IClientModInitializer {
+        /// <summary>
+        /// Avatar runtime actuellement porté par le contrôleur local (peut être null).
+        /// </summary>
+        public static IRuntimeAvatar CurrentAvatar
+            => ControllerAPI?.Current is IControllerAvatar c 
+                ? c.GetAvatar() 
+                : null;
+
+        /// <summary>
+        /// Levé quand l'avatar courant du contrôleur change (avec le nouvel avatar runtime).
+        /// </summary>
+        public static readonly UnityEvent<IRuntimeAvatar> AvatarChanged = new();
+    
         internal static IUiAPI UiAPI
             => Main.Instance.CoreAPI.ModAPI
                    .GetMod("ui")
                    ?.GetInstance<IUiAPI>();
+
+        internal static IControllerAPI ControllerAPI
+            => Main.Instance.CoreAPI.ModAPI
+                   .GetMod("controllers")
+                   ?.GetInstance<IControllerAPI>();
 
         public static T GetAsset<T>(string path)
             where T : UnityEngine.Object
@@ -34,7 +56,26 @@ namespace Nox.Avatars.Runtime {
         public void OnInitializeClient(IClientModCoreAPI api) {
             Instance = this;
             CoreAPI = api;
-            _events = new[] { CoreAPI.EventAPI.Subscribe("menu_goto", OnGoto), CoreAPI.EventAPI.Subscribe("widget_request", OnWidgetRequest) };
+            _events = new[] {
+                CoreAPI.EventAPI.Subscribe("menu_goto", OnGoto),
+                CoreAPI.EventAPI.Subscribe("widget_request", OnWidgetRequest),
+                CoreAPI.EventAPI.Subscribe("controller_avatar_changed", OnControllerAvatarChanged),
+                CoreAPI.EventAPI.Subscribe("radial_goto", OnRadialGoto)
+            };
+        }
+
+        private void OnControllerAvatarChanged(EventData context) {
+            if (!context.TryGet(1, out IRuntimeAvatar runtime))
+                return;
+            AvatarChanged?.Invoke(runtime);
+        }
+
+        private void OnRadialGoto(EventData context) {
+            if (!context.TryGet(0, out int mid)) return;
+            if (!context.TryGet(1, out string path)) return;
+            var page = AvatarRadialPage.Create(path);
+            if (page == null) return;
+            Main.Instance.CoreAPI.EventAPI.Emit("radial_display", mid, page);
         }
 
         private void OnGoto(EventData context) {
@@ -43,7 +84,8 @@ namespace Nox.Avatars.Runtime {
             var menu = UiAPI?.Get<IMenu>(mid);
             if (menu == null) return;
             IPage page = null;
-            if (AvatarPage.GetStaticKey() == key) page = AvatarPage.OnGotoAction(menu, context.Data[2..]);
+            if (AvatarPage.GetStaticKey() == key) 
+                page = AvatarPage.OnGotoAction(menu, context.Data[2..]);
             if (page == null) return;
             Main.Instance.CoreAPI.EventAPI.Emit("menu_display", menu.Id, page);
         }

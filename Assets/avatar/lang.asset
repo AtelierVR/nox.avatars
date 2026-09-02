@@ -183,3 +183,5 @@ MonoBehaviour:
       value: "General"
     - key: settings.entry.audio.channel.avatar
       value: "Avatars"
+    - key: radial.parameters
+      value: Parameters
