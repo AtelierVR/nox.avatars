@@ -33,6 +33,12 @@ namespace Nox.Avatars.Runtime.radial {
 		/// <summary>Clé de traduction de l'entrée "Parameters" du hub.</summary>
 		public const string ParametersLabelKey = "radial.parameters";
 
+		/// <summary>Icône de l'entrée "Parameters" du hub (ouvre le menu des paramètres).</summary>
+		public const string ParametersIcon = "ui:icons/edit_attributes.png";
+
+		/// <summary>Icône du hub (page racine du radial).</summary>
+		public const string HubIcon = "ui:icons/hub.png";
+
 		/// <summary>
 		/// Clé spéciale "value" : renvoie directement le premier argument (texte
 		/// déjà traduit fourni par les entrées du IMenu de l'avatar).
@@ -44,9 +50,18 @@ namespace Nox.Avatars.Runtime.radial {
 
 		/// <summary>Page hub : une seule entrée "Parameters" qui ouvre le menu de l'avatar.</summary>
 		public static IRadialPage CreateHub()
-			=> new Page(RootPath, new IRadialElement[] {
-				new Element(new[] { ParametersLabelKey }, null, new PageAction(ParametersPath)),
-			});
+			=> new Page(
+                RootPath,
+                new IRadialElement[] {
+				    new Element(
+                        new[] { ParametersLabelKey }, 
+                        Client.GetAssetAsync<Sprite>(ParametersIcon), 
+                        new PageAction(ParametersPath)
+                    ),
+			    }, 
+                new[] { ParametersLabelKey }, 
+                Client.GetAssetAsync<Sprite>(HubIcon)
+            );
 
 		/// <summary>Page du menu de l'avatar correspondant à un chemin (sous "/parameters").</summary>
 		public static IRadialPage ToRadialPage(IMenuEntry root, string path)
@@ -56,7 +71,30 @@ namespace Nox.Avatars.Runtime.radial {
 		public static IRadialPage ToRadialPage(IMenuEntry root, string path, string basePath) {
 			var menu   = Resolve(root, path, basePath);
 			var content = BuildContent(menu, path);
-			return new Page(path, content);
+			var meta   = PageInfo(root, path, basePath);
+			return new Page(path, content, meta.label, meta.icon);
+		}
+
+		/// <summary>
+		/// Label + icône de la page : ceux de l'entrée qui ouvre la page (l'entrée
+		/// parente). La page du menu racine (<see cref="ParametersPath"/>) porte le
+		/// label/icône de l'entrée hub "Parameters" (<see cref="ParametersLabelKey"/>
+		/// / <see cref="ParametersIcon"/>). Vide seulement en fallback.
+		/// </summary>
+		private static (string[] label, UniTask<Sprite> icon) PageInfo(IMenuEntry root, string path, string basePath) {
+			if (path == basePath)
+				return (new[] { ParametersLabelKey }, Client.GetAssetAsync<Sprite>(ParametersIcon));
+
+			// Dernier segment = id de l'entrée (sous-menu) qui mène à cette page.
+			var lastSlash = path.LastIndexOf('/');
+			if (root == null || lastSlash < 0 || !int.TryParse(path[(lastSlash + 1)..], out var id))
+				return (null, UniTask.FromResult<Sprite>(null));
+
+			var parent = Resolve(root, path[..lastSlash], basePath);
+			var entry  = FindSubmenu(parent, id);
+			return entry != null
+				? (LabelFor(entry.Label), UniTask.FromResult(entry.Icon))
+				: (null, UniTask.FromResult<Sprite>(null));
 		}
 
 		private static IRadialElement[] BuildContent(IMenuEntry menu, string pagePath) {
@@ -122,9 +160,21 @@ namespace Nox.Avatars.Runtime.radial {
 
 		/// <summary>Page radiale du menu avatar.</summary>
 		private sealed class Page : IRadialPage {
-			public Page(string path, IRadialElement[] content) {
+			public Page(string path, IRadialElement[] content)
+				: this(
+                    path, 
+                    content, 
+                    Array.Empty<string>(), 
+                    UniTask.FromResult<Sprite>(null)
+                ) { }
+
+			public Page(string path, IRadialElement[] content, string[] label, UniTask<Sprite> icon) {
 				Key     = path;
 				Context = new object[] { path };
+				Label   = label ?? Array.Empty<string>();
+				// Preserve : la page peut être réaffichée (GoBack) et son icône
+				// awaitée plusieurs fois sans erreur de token (UniTask one-shot).
+				Icon    = icon.Preserve();
 				Content = content;
 			}
 
@@ -133,6 +183,10 @@ namespace Nox.Avatars.Runtime.radial {
 			public object[] Context { get; }
 
 			public IRadialMenu Menu { get; }
+
+			public string[] Label { get; }
+
+			public UniTask<Sprite> Icon { get; }
 
 			public IRadialElement[] Content { get; }
 
@@ -154,6 +208,14 @@ namespace Nox.Avatars.Runtime.radial {
 			public Element(string[] label, Sprite icon, IRadialElementAction action) {
 				Label  = label;
 				Icon   = UniTask.FromResult(icon);
+				Action = action;
+			}
+
+			public Element(string[] label, UniTask<Sprite> icon, IRadialElementAction action) {
+				Label  = label;
+				// Preserve : l'élément peut être réaffiché (GoBack) et son icône
+				// awaitée plusieurs fois sans erreur de token (UniTask one-shot).
+				Icon   = icon.Preserve();
 				Action = action;
 			}
 
