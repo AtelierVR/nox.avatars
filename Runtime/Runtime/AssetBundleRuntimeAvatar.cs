@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Nox.AssetBundles;
@@ -48,9 +47,17 @@ namespace Nox.Avatars.Runtime
 				}
 
 				token.ThrowIfCancellationRequested();
-
-				foreach (var asset in avatar.Bundle.AssetBundle.GetAllAssetNames())
-					Logger.LogDebug($"Bundle Asset: {asset}");
+				try
+				{
+					var collections = avatar.Bundle.AssetBundle.LoadAllAssets<ShaderVariantCollection>();
+					foreach (var collection in collections)
+						if (collection && !collection.isWarmedUp)
+							collection.WarmUp();
+				}
+				catch (Exception ex)
+				{
+					Logger.LogWarning(new Exception($"Failed to warmup shader variant collections", ex));
+				}
 
 				// Load the avatar from the bundle (prefab)
 
@@ -80,7 +87,7 @@ namespace Nox.Avatars.Runtime
 				avatar.Root = await prefab.InstantiateAsync(
 					progress: new Progress<float>(p => progress?.Invoke(.75f + p * .25f)),
 					cancellationToken: token
-				);;
+				);
 
 				if (!avatar.Root)
 				{

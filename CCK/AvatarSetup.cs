@@ -136,6 +136,8 @@ namespace Nox.CCK.Avatars {
 
 					progress?.Invoke(0.8f + 0.2f * (i + 1 + p * modules.Length) / (phases.Length * modules.Length));
 				}
+
+				await UniTask.Yield(cancellationToken: token);
 			}
 
 			progress?.Invoke(1.0f);
