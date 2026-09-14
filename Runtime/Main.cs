@@ -21,6 +21,7 @@ using UnityEngine.Events;
 using Nox.Avatars.Runtime.Settings;
 using SettingsHandler = Nox.Settings.IHandler;
 using Nox.CCK.Audio;
+using Logger = Nox.CCK.Utils.Logger;
 
 namespace Nox.Avatars.Runtime
 {
@@ -128,37 +129,50 @@ namespace Nox.Avatars.Runtime
             Instance = null;
         }
 
-        public async UniTask<IRuntimeAvatar> LoadLoading(Dictionary<string, object> arguments = null, Action<float> progress = null, CancellationToken token = default)
-        {
-            var config = Config.Load();
-            var custom = config.Get<string>(new[] { "avatar", "loading" });
-            IRuntimeAvatar runtimeAvatar = null;
-            if (!string.IsNullOrEmpty(custom)) runtimeAvatar = await AvatarLoader.LoadFromCache(custom, arguments, progress, token);
-            runtimeAvatar ??= await AvatarLoader.LoadFromAssets("prefabs/loading.prefab", arguments, progress, token);
+        /// <summary>
+        /// Charge un avatar de secours depuis le bundle nox.avatars, en privilégiant
+        /// l'entrée de cache configurée (config "avatar.&lt;key&gt;").
+        /// Un chemin absent du bundle est signalé explicitement : un null silencieux
+        /// fait retomber tous les appelants sur l'avatar d'erreur sans cause lisible.
+        /// </summary>
+        private async UniTask<IRuntimeAvatar> LoadBundleAvatar(string path, string configKey, Dictionary<string, object> arguments, Action<float> progress, CancellationToken token) {
+            IRuntimeAvatar runtime = null;
+
+            if (string.IsNullOrEmpty(configKey)) {
+                var config = Config.Load();
+                var custom = config.Get<string>(new[] { "avatar", configKey });
+
+                if (!string.IsNullOrEmpty(custom))
+                    runtime = await AvatarLoader.LoadFromCache(custom, arguments, progress, token);
+
+                if (runtime != null)
+                    return runtime;
+            }
+
+            runtime = await AvatarLoader.LoadFromAssets(path, arguments, progress, token);
+            if (runtime == null)
+                Logger.LogError(
+                    $"Bundled avatar '{path}' is missing from the nox.avatars bundle "
+                    + $"and no 'avatar.{configKey}' cache entry is configured."
+                );
+
+            return runtime;
+        }
+
+        public async UniTask<IRuntimeAvatar> LoadLoading(Dictionary<string, object> arguments = null, Action<float> progress = null, CancellationToken token = default) {
+            var runtimeAvatar = await LoadBundleAvatar("prefabs/loading.prefab", "loading", arguments, progress, token);
             runtimeAvatar ??= await LoadError(arguments, progress, token);
             return runtimeAvatar;
         }
 
-        public async UniTask<IRuntimeAvatar> LoadDefault(Dictionary<string, object> arguments = null, Action<float> progress = null, CancellationToken token = default)
-        {
-            var config = Config.Load();
-            var custom = config.Get<string>(new[] { "avatar", "default" });
-            IRuntimeAvatar runtimeAvatar = null;
-            if (!string.IsNullOrEmpty(custom)) runtimeAvatar = await AvatarLoader.LoadFromCache(custom, arguments, progress, token);
-            runtimeAvatar ??= await AvatarLoader.LoadFromAssets("prefabs/default.prefab", arguments, progress, token);
+        public async UniTask<IRuntimeAvatar> LoadDefault(Dictionary<string, object> arguments = null, Action<float> progress = null, CancellationToken token = default) {
+            var runtimeAvatar = await LoadBundleAvatar("prefabs/default.prefab", "default", arguments, progress, token);
             runtimeAvatar ??= await LoadError(arguments, progress, token);
             return runtimeAvatar;
         }
 
         public async UniTask<IRuntimeAvatar> LoadError(Dictionary<string, object> arguments = null, Action<float> progress = null, CancellationToken token = default)
-        {
-            var config = Config.Load();
-            var custom = config.Get<string>(new[] { "avatar", "error" });
-            IRuntimeAvatar runtimeAvatar = null;
-            if (!string.IsNullOrEmpty(custom)) runtimeAvatar = await AvatarLoader.LoadFromCache(custom, arguments, progress, token);
-            runtimeAvatar ??= await AvatarLoader.LoadFromAssets("prefabs/error.prefab", arguments, progress, token);
-            return runtimeAvatar;
-        }
+            => await LoadBundleAvatar("prefabs/error.prefab", "error", arguments, progress, token);
 
         public async UniTask<IRuntimeAvatar> LoadFromPath(string path, Dictionary<string, object> arguments = null, Action<float> progress = null, CancellationToken token = default)
             => await AvatarLoader.LoadFromPath(path, arguments, progress, token)
