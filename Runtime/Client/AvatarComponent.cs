@@ -4,6 +4,7 @@ using Nox.Avatars.Controllers;
 using Nox.CCK.Avatars;
 using Nox.CCK.Language;
 using Nox.CCK.Network;
+using Nox.CCK.Users;
 using Nox.CCK.Utils;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -65,7 +66,7 @@ namespace Nox.Avatars.Runtime.client {
 			if (controller is IControllerAvatar ca) {
 				var id = Page.Avatar.Identifier;
 				await UniTask.WhenAll(
-					Main.UserAPI.UpdateCurrent(Main.UserAPI.MakeUpdateCurrentRequest().SetAvatar(id.ToString())),
+					Main.UserAPI.UpdateCurrent(new UpdateCurrentRequest { Avatar = id.ToString() }),
 					ca.SetAvatar(id)
 				);
 			}
