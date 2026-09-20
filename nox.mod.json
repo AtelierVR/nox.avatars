@@ -77,9 +77,19 @@
       "type": "depends",
       "version": ">=1.0.0",
       "register": "git+https://github.com/AtelierVR/nox.settings.git"
+    },
+    {
+      "id": "audio",
+      "type": "depends",
+      "version": ">=1.0.0",
+      "register": "git+https://github.com/AtelierVR/nox.audio.git"
     }
   ],
   "constraints": [
+    {
+      "type": "after",
+      "id": "audio"
+    },
     {
       "type": "after",
       "id": "network"
