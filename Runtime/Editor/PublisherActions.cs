@@ -156,7 +156,7 @@ namespace Nox.Avatars.Runtime.Editor {
 				return;
 			}
 
-			var target = descriptor.target;
+			var target = descriptor.Target;
 			if (target == Platform.None)
 				target = PlatformExtensions.CurrentPlatform;
 

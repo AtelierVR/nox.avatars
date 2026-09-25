@@ -252,18 +252,21 @@ namespace Nox.Avatars.Runtime.radial {
 					return;
 				}
 
-				if (parameter.GetValueType() == ParameterType.Bool) {
-					var current = parameter.Get() is bool b && b;
-					parameter.Set(!current);
+				if (parameter.ValueType == ParameterType.Bool) {
+					var current = parameter.Value is bool b && b;
+					parameter.Value = !current;
 					Logger.LogDebug($"[avatar] {_parameter} = {!current}");
 					return;
 				}
 
-				Logger.LogDebug($"[avatar] {_parameter} = {parameter.Get()} (toggle spécifique à venir)");
+				Logger.LogDebug($"[avatar] {_parameter} = {parameter.Value} (toggle spécifique à venir)");
 			}
 
 			private static IParameter GetParameter(string name)
-				=> Client.CurrentAvatar?.Descriptor?.GetModules<IParameterModule>().FirstOrDefault()?.GetParameter(name);
+				=> Client.CurrentAvatar?.Descriptor
+					?.GetModules<IParameterModule>()
+					.FirstOrDefault()
+					?.GetParameter(name);
 		}
 	}
 }
