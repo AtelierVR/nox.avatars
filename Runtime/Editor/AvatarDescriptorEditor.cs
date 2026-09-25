@@ -41,7 +41,7 @@ namespace Nox.Avatars.Runtime.Editor {
 			_publishId = _root.Q<PropertyField>("publishId");
 			_publishServer = _root.Q<PropertyField>("publishServer");
 			_publishVersion = _root.Q<PropertyField>("publishVersion");
-			var targetProperty = serializedObject.FindProperty(nameof(AvatarDescriptor.target));
+			var targetProperty = serializedObject.FindProperty(nameof(AvatarDescriptor.targetPlatform));
 			if (targetProperty != null && _target != null)
 				_target.BindProperty(targetProperty);
 			var publishIdProperty = serializedObject.FindProperty(nameof(AvatarDescriptor.publishId));
