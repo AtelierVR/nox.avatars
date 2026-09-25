@@ -72,19 +72,41 @@ namespace Nox.Avatars.Editor {
 					.FirstOrDefault();
 
 				// Set parameters without triggering rigging builds
-				parameters?.GetParameter("IsLocal")?.Set(true);
-				parameters?.GetParameter("Grounded")?.Set(true);
-				parameters?.GetParameter("Upright")?.Set(1.0f);
-				parameters?.GetParameter("VRMode")?.Set(0);
-				parameters?.GetParameter("UseXR")?.Set(false);
-				parameters?.GetParameter("TrackingType")?.Set(3);
-				parameters?.GetParameter("tracking/left_hand/active")?.Set(false);
-				parameters?.GetParameter("tracking/right_hand/active")?.Set(false);
-				parameters?.GetParameter("tracking/head/active")?.Set(false);
-				parameters?.GetParameter("tracking/left_foot/active")?.Set(false);
-				parameters?.GetParameter("tracking/right_foot/active")?.Set(false);
-				parameters?.GetParameter("tracking/left_toes/active")?.Set(false);
-				parameters?.GetParameter("tracking/right_toes/active")?.Set(false);
+				if (parameters != null)
+					foreach (var param in parameters.GetParameters())
+						switch (param.Name)
+        				{
+        				    case "IsLocal":
+        				    case "Grounded":
+        				        param.Value = true;
+        				        break;
+	
+        				    case "Upright":
+        				        param.Value = 1.0f;
+        				        break;
+	
+        				    case "VRMode":
+        				        param.Value = 0;
+        				        break;
+	
+        				    case "UseXR":
+        				        param.Value = false;
+        				        break;
+	
+        				    case "TrackingType":
+        				        param.Value = 3;
+        				        break;
+	
+        				    case "tracking/left_hand/active":
+        				    case "tracking/right_hand/active":
+        				    case "tracking/head/active":
+        				    case "tracking/left_foot/active":
+        				    case "tracking/right_foot/active":
+        				    case "tracking/left_toes/active":
+        				    case "tracking/right_toes/active":
+        				        param.Value = false;
+        				        break;
+        				}
 			} finally {
 				// Re-enable rigging after setup is complete and wait a frame
 				if (rigBuilder != null && wasRigBuilderEnabled) {
