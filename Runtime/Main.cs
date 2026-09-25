@@ -138,7 +138,7 @@ namespace Nox.Avatars.Runtime
         private async UniTask<IRuntimeAvatar> LoadBundleAvatar(string path, string configKey, Dictionary<string, object> arguments, Action<float> progress, CancellationToken token) {
             IRuntimeAvatar runtime = null;
 
-            if (string.IsNullOrEmpty(configKey)) {
+            if (!string.IsNullOrEmpty(configKey)) {
                 var config = Config.Load();
                 var custom = config.Get<string>(new[] { "avatar", configKey });
 
