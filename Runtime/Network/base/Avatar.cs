@@ -1,55 +1,21 @@
 using System;
 using Newtonsoft.Json;
-using Nox.CCK.Convertors;
-using Identifier = Nox.CCK.Utils.Identifier;
+using Nox.CCK.Network.Assets;
+using Nox.CCK.Utils;
 
 namespace Nox.Avatars.Runtime.Network {
-	// ReSharper disable InconsistentNaming
-	[Serializable]
-	public class Avatar : IAvatar {
-		[JsonProperty("id")]
-		public uint Id { get; private set; }
-
-		[JsonProperty("title")]
-		public string Title { get; private set; }
-
-		[JsonProperty("description")]
-		public string Description { get; private set; }
-
-		[JsonProperty("thumbnail")]
-		public string Thumbnail { get; private set; }
-
-		[JsonProperty("tags")]
-		public string[] Tags { get; private set; }
-
-		[JsonProperty("owner"), JsonConverter(typeof(StringToIdentifierConverter))]
-		public Identifier Owner { get; private set; }
-
-		[JsonProperty("server")]
-		public string Server { get; private set; }
-
-		[JsonProperty("release"), JsonConverter(typeof(ReleaseConverter))]
-		public Release Release { get; private set; }
-		
-		IRelease IAvatar.Release
-			=> Release;
-
-		[JsonProperty("created_at"), JsonConverter(typeof(UnixTimestampToDateTimeConverter))]
-		public DateTime CreatedAt { get; private set; }
-
-		public Identifier Identifier
+	/// <summary>
+	/// An avatar as returned by the avatars endpoint: the generic <see cref="Asset"/> narrowed to the
+	/// <see cref="IAvatar"/> type. Avatars currently carry no field of their own.
+	/// </summary>
+	[Serializable, JsonObject]
+	public class Avatar : Asset, IAvatar, INoxObject {
+		/// <summary>Canonical reference of the avatar (<c>a:&lt;id&gt;@&lt;server&gt;</c>).</summary>
+		[JsonIgnore]
+		public override Identifier Identifier
 			=> new("a", Id, null, Server);
 
-		private class UnixTimestampToDateTimeConverter : JsonConverter<DateTime> {
-			public override void WriteJson(JsonWriter writer, DateTime value, JsonSerializer serializer)
-				=> writer.WriteValue(new DateTimeOffset(value).ToUnixTimeMilliseconds());
-
-			public override DateTime ReadJson(JsonReader reader, Type objectType, DateTime existingValue, bool hasExistingValue, JsonSerializer serializer)
-				=> reader.TokenType switch {
-					JsonToken.Integer => DateTimeOffset.FromUnixTimeMilliseconds((long)reader.Value!).UtcDateTime,
-					JsonToken.Float   => DateTimeOffset.FromUnixTimeMilliseconds((long)(double)reader.Value!).UtcDateTime,
-					_                 => throw new JsonSerializationException("Invalid token type for DateTime")
-				};
-		}
+		public override string ToString()
+			=> $"{GetType().Name}[id={Id}, name={Name ?? "<no-name>"}, owner={Owner}, server={Server}, images={Images?.Length ?? 0}]";
 	}
 }

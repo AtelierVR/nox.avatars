@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -7,16 +6,30 @@ using Cysharp.Threading.Tasks;
 using Newtonsoft.Json;
 using Nox.CCK.Avatars;
 using Nox.CCK.Convertors;
-using Nox.CCK.Network;
+using Nox.CCK.Network.Assets;
 using Nox.CCK.Utils;
+using Nox.Network.Assets;
 using UnityEngine;
 using UnityEngine.Events;
-using UnityEngine.Networking;
 using Logger = Nox.CCK.Utils.Logger;
 
 namespace Nox.Avatars.Runtime.Network {
+	/// <summary>
+	/// Avatars on a node: the entity routes (<c>/avatars</c>) and the bundle an avatar is loaded from,
+	/// both driven through the generic asset pipeline (<see cref="IAssetsAPI"/>) so avatars share its
+	/// release/file/cache handling with every other asset type.
+	/// </summary>
 	public class Network {
+		/// <summary>Invoked when an avatar is fetched from the server.</summary>
 		private readonly UnityEvent<Avatar> _fetchEvent = new();
+
+		/// <summary>The avatars collection served by the node.</summary>
+		public static AssetEndpoint Endpoint
+			=> AvatarsEndpoint.Endpoint;
+
+		/// <summary>Asset pipeline exposed by the "network" mod, shared by every asset type.</summary>
+		private static IAssetsAPI Assets
+			=> Main.AssetsAPI;
 
 		private void InvokeFetch(Avatar avatar) {
 			if (avatar == null)
@@ -34,109 +47,116 @@ namespace Nox.Avatars.Runtime.Network {
 			return (ide.ToShortString(), ide.Server);
 		}
 
+		/// <summary>Filters of an avatar search, mapped onto the generic collection filters.</summary>
+		private static AssetSearchRequest ToAssetSearchRequest(SearchRequest data)
+			=> new() {
+				Query  = data.Query,
+				Offset = data.Offset,
+				Limit  = data.Limit
+			};
+
 		public async UniTask<Avatar> Fetch(Identifier ide, CancellationToken cancellationToken = default) {
 			var (id, address) = Optimize(ide);
 			if (address == Identifier.LOCAL_SERVER) {
-				Logger.LogError($"Cannot fetch world {ide} from {address}");
+				Logger.LogError($"Cannot fetch avatar {ide} from {address}");
 				return null;
 			}
 
-			var request = await RequestNode.To(address, $"/avatars/{id}");
-			if (request == null) {
-				Logger.LogError($"Failed to create request for avatar {ide}");
+			var assets = Assets;
+
+			if (assets == null) {
+				Logger.LogError("Cannot fetch avatar: the asset pipeline is not available.");
 				return null;
 			}
 
-			await request.Send(cancellationToken);
-			var response = await request.Node<Avatar>(cancellationToken);
-			if (response.HasError()) {
-				Logger.LogError($"Failed to fetch avatar {ide} from {address}: {response.Error.Message}");
-				return null;
-			}
+			var avatar = await assets.Fetch<Avatar>(address, Endpoint, id, token: cancellationToken);
 
-			var avatar = response.Data;
+			if (avatar == null)
+				Logger.LogError($"Failed to fetch avatar {ide} from {address}");
+
 			InvokeFetch(avatar);
 			return avatar;
 		}
 
-		public async UniTask<SearchResponse> Search(ISearchRequest data, CancellationToken cancellationToken = default) {
-			var address = data.Server ?? Main.UserAPI?.Current.Server;
+		public async UniTask<SearchResponse> Search(SearchRequest data, CancellationToken cancellationToken = default) {
+			var address = data.Server ?? Main.UserAPI?.Current?.Server;
 			if (string.IsNullOrEmpty(address)) {
 				Logger.LogError("Cannot search avatars: no server address provided.");
 				return null;
 			}
 
-			var request = await RequestNode.To(address, $"/avatars{data}");
-			if (request == null) {
-				Logger.LogError($"Failed to create request for avatar search");
+			var assets = Assets;
+
+			if (assets == null) {
+				Logger.LogError("Cannot search avatars: the asset pipeline is not available.");
 				return null;
 			}
 
-			await request.Send(cancellationToken);
-			var response = await request.Node<SearchResponse>(cancellationToken);
-			if (response.HasError()) {
-				Logger.LogError($"Failed to search avatars from {address}: {response.Error.Message}");
+			var response = await assets.Search<AssetSearchResponse<Avatar>>(
+				address,
+				Endpoint,
+				ToAssetSearchRequest(data),
+				cancellationToken
+			);
+
+			if (response == null) {
+				Logger.LogError($"Failed to search avatars from {address}");
 				return null;
 			}
 
-			var avatars = response.Data;
-			avatars.Request = data;
-
-			foreach (var avatar in avatars.Items)
+			foreach (var avatar in response.Items)
 				InvokeFetch(avatar);
 
-			return avatars;
+			var result = SearchResponse.From(response);
+
+			if (result != null)
+				result.Request = data;
+
+			return result;
 		}
 
-		public async UniTask<Avatar> Create(CreateAvatarRequest data, string server, CancellationToken cancellationToken = default) {
-			if (string.IsNullOrEmpty(server)) {
+		public async UniTask<Avatar> Create(AvatarCreateRequest data, string server, CancellationToken cancellationToken = default) {
+			var address = server ?? Main.UserAPI?.Current?.Server;
+			if (string.IsNullOrEmpty(address)) {
 				Logger.LogError("Cannot create avatar: no server address provided.");
 				return null;
 			}
 
-			var request = await RequestNode.To(server, "/avatars");
-			if (request == null) {
-				Logger.LogError($"Failed to create request for avatar creation");
-				return null;
-			}
-			Logger.LogDebug($"Body: {data.ToJson()}");
-			request.SetBody(data.ToJson(), "application/json");
-			request.method = RequestExtension.Method.PUT;
-			await request.Send(cancellationToken);
-			var response = await request.Node<Avatar>(cancellationToken);
-			if (response.HasError()) {
-				Logger.LogError($"Failed to create avatar on {server}: {response.Error.Message}");
+			var assets = Assets;
+
+			if (assets == null) {
+				Logger.LogError("Cannot create avatar: the asset pipeline is not available.");
 				return null;
 			}
 
-			var avatar = response.Data;
+			var avatar = await assets.Create<Avatar>(address, Endpoint, data, cancellationToken);
+
+			if (avatar == null)
+				Logger.LogError($"Failed to create avatar on {address}");
+
 			InvokeFetch(avatar);
 			return avatar;
 		}
 
-		public async UniTask<Avatar> Update(Identifier ide, UpdateAvatarRequest form, CancellationToken cancellationToken = default) {
+		public async UniTask<Avatar> Update(Identifier ide, AvatarUpdateRequest form, CancellationToken cancellationToken = default) {
 			var (id, address) = Optimize(ide);
 			if (address == Identifier.LOCAL_SERVER) {
-				Logger.LogError($"Cannot fetch world {ide} from {address}");
+				Logger.LogError($"Cannot update avatar {ide} from {address}");
 				return null;
 			}
 
-			var request = await RequestNode.To(address, $"/avatars/{id}");
-			if (request == null) {
-				Logger.LogError($"Failed to create request for avatar {ide}");
+			var assets = Assets;
+
+			if (assets == null) {
+				Logger.LogError("Cannot update avatar: the asset pipeline is not available.");
 				return null;
 			}
 
-			request.SetBody(form.ToJson(), "application/json");
-			request.method = RequestExtension.Method.POST;
-			await request.Send(cancellationToken);
-			var response = await request.Node<Avatar>(cancellationToken);
-			if (response.HasError()) {
-				Logger.LogError($"Failed to update avatar {ide} from {address}: {response.Error.Message}");
-				return null;
-			}
+			var avatar = await assets.Update<Avatar>(address, Endpoint, id, form, cancellationToken);
 
-			var avatar = response.Data;
+			if (avatar == null)
+				Logger.LogError($"Failed to update avatar {ide} from {address}");
+
 			InvokeFetch(avatar);
 			return avatar;
 		}
@@ -144,257 +164,140 @@ namespace Nox.Avatars.Runtime.Network {
 		public async UniTask<bool> Delete(Identifier ide, CancellationToken cancellationToken = default) {
 			var (id, address) = Optimize(ide);
 			if (address == Identifier.LOCAL_SERVER) {
-				Logger.LogError($"Cannot fetch world {ide} from {address}");
+				Logger.LogError($"Cannot delete avatar {ide} from {address}");
 				return false;
 			}
 
-			var request = await RequestNode.To(address, $"/avatars/{id}");
-			if (request == null) {
-				Logger.LogError($"Failed to create request for avatar {ide}");
+			var assets = Assets;
+
+			if (assets == null) {
+				Logger.LogError("Cannot delete avatar: the asset pipeline is not available.");
 				return false;
 			}
 
-			request.method = RequestExtension.Method.DELETE;
-			await request.Send(cancellationToken);
-			if (request.Ok())
-				return true;
-
-			Logger.LogError($"Failed to delete avatar {ide} from {address}");
-			return false;
+			return await assets.Delete(address, Endpoint, id, cancellationToken);
 		}
 
-		public async UniTask<AssetSearchResponse> SearchAssets(Identifier ide, AssetSearchRequest data, CancellationToken cancellationToken = default) {
+		/// <summary>
+		/// Release an avatar is loaded from. A <c>v</c> query on the identifier pins the release by
+		/// name (the version the avatar was published with); without it, the release the asset points
+		/// at is used (<c>auto</c> resolving to the newest one).
+		/// </summary>
+		public async UniTask<IAssetRelease> ResolveRelease(Identifier ide, CancellationToken cancellationToken = default) {
 			var (id, address) = Optimize(ide);
 			if (address == Identifier.LOCAL_SERVER) {
-				Logger.LogError($"Cannot fetch world {ide} from {address}");
+				Logger.LogError($"Cannot resolve the release of avatar {ide} from {address}");
 				return null;
 			}
 
-			var request = await RequestNode.To(address, $"/avatars/{id}/assets{data}");
-			if (request == null) {
-				Logger.LogError($"Failed to create request for avatar {ide} assets");
+			var assets = Assets;
+
+			if (assets == null) {
+				Logger.LogError("Cannot resolve the avatar release: the asset pipeline is not available.");
 				return null;
 			}
 
-			await request.Send(cancellationToken);
-			var response = await request.Node<AssetSearchResponse>(cancellationToken);
-			if (response.HasError()) {
-				Logger.LogError($"Failed to get assets for avatar {ide} from {address}: {response.Error.Message}");
-				return null;
-			}
+			var version = ide.GetVersion();
 
-			response.Data.Identifier = ide;
-			response.Data.Request    = data;
+			var release = version == AvatarIdentifierExtensions.DefaultVersion
+				? await assets.FetchPreferredRelease(address, Endpoint, id, cancellationToken)
+				: await assets.FetchRelease(address, Endpoint, id, version.ToString(), true, cancellationToken);
 
-			return response.Data;
+			if (release == null)
+				Logger.LogWarning($"No release found for avatar {ide} (version {version}).");
+
+			return release;
 		}
 
-		public async UniTask<AvatarAsset> CreateAsset(Identifier ide, CreateAssetRequest data, CancellationToken cancellationToken = default) {
-			var (id, address) = Optimize(ide);
-			if (address == Identifier.LOCAL_SERVER) {
-				Logger.LogError($"Cannot fetch world {ide} from {address}");
-				return null;
-			}
+		/// <summary>
+		/// Bundle an avatar is loaded from: the file of its release that matches the current platform
+		/// and engine, or <c>null</c> when the avatar has no compatible variant.
+		/// </summary>
+		public async UniTask<IAssetFile> ResolveBundle(Identifier ide, CancellationToken cancellationToken = default) {
+			var release = await ResolveRelease(ide, cancellationToken);
 
-			var request = await RequestNode.To(address, $"/avatars/{id}/assets");
-			if (request == null) {
-				Logger.LogError($"Failed to create request for avatar {ide}");
+			if (release == null)
 				return null;
-			}
 
-			request.SetBody(data.ToJson(), "application/json");
-			request.method = RequestExtension.Method.PUT;
-			await request.Send(cancellationToken);
-			var response = await request.Node<AvatarAsset>(cancellationToken);
-			if (response.HasError()) {
-				Logger.LogError($"Failed to create asset for avatar {ide} on {address}: {response.Error.Message}");
-				return null;
-			}
+			var file = release.BestFile(PlatformExtensions.CurrentPlatform, EngineExtensions.CurrentEngine);
 
-			return response.Data;
+			if (file == null)
+				Logger.LogError(
+					$"No compatible bundle for avatar {ide}: release {release.Name ?? release.Id.ToString()} has no file for "
+					+ $"{PlatformExtensions.CurrentPlatform.GetPlatformName()} on {EngineExtensions.CurrentEngine.GetEngineName()}."
+				);
+
+			return file;
 		}
 
-		public async UniTask<bool> UploadThumbnail(Identifier ide, Texture2D texture, Action<float> onProgress = null, CancellationToken cancellationToken = default) {
-			var (id, address) = Optimize(ide);
-			if (address == Identifier.LOCAL_SERVER) {
-				Logger.LogError($"Cannot fetch world {ide} from {address}");
+		/// <summary>
+		/// Adds an image to an avatar, converting the texture to a temporary PNG first.
+		/// </summary>
+		public async UniTask<bool> AddImage(Identifier ide, Texture2D texture, Action<float> onProgress = null, CancellationToken cancellationToken = default) {
+			if (!texture) {
+				Logger.LogError($"Cannot add an image to avatar {ide}: texture is null.");
 				return false;
 			}
 
-			// Convert texture to PNG byte array
-			byte[] imageData;
-			string fileHash;
+			var (id, address) = Optimize(ide);
+			if (address == Identifier.LOCAL_SERVER) {
+				Logger.LogError($"Cannot add an image to avatar {ide} from {address}");
+				return false;
+			}
+
+			var assets = Assets;
+
+			if (assets == null) {
+				Logger.LogError("Cannot add an avatar image: the asset pipeline is not available.");
+				return false;
+			}
+
+			byte[] data;
 
 			try {
-				imageData = texture.EncodeToPNG();
+				data = texture.EncodeToPNG();
 
-				if (imageData == null || imageData.Length == 0) {
-					Logger.LogError($"Failed to encode texture for avatar {ide}: EncodeToPNG returned null or empty data. Check texture format and read/write settings.");
+				if (data == null || data.Length == 0)
+					throw new Exception("Encoded image data is null or empty.");
+			} catch (Exception ex) {
+				Logger.LogError(new Exception($"Failed to encode texture for avatar {ide}", ex));
+				return false;
+			}
+
+			var path = Path.Combine(Application.temporaryCachePath, $"{Guid.NewGuid():N}.png");
+
+			try {
+				await File.WriteAllBytesAsync(path, data, cancellationToken);
+				onProgress?.Invoke(0f);
+
+				var avatar = await assets.AddImage(
+					address,
+					Endpoint,
+					id,
+					path,
+					onProgress == null ? null : (ratio, _) => onProgress(ratio),
+					cancellationToken
+				);
+
+				if (avatar == null) {
+					Logger.LogError($"Failed to add an image to avatar {ide} on {address}");
 					return false;
 				}
 
-				fileHash = Hashing.HashBytes(imageData);
-			} catch (Exception ex) {
-				Logger.LogError($"Failed to encode texture for avatar {ide}: {ex.Message}");
-				return false;
-			}
-
-			var request = await RequestNode.To(address, $"/avatars/{id}/thumbnail");
-			if (request == null) {
-				Logger.LogError($"Failed to create request for avatar {ide}");
-				return false;
-			}
-
-			request.method = RequestExtension.Method.POST;
-			request.SetBody(new List<IMultipartFormSection>() {
-				new MultipartFormFileSection(
-					"file",
-					imageData,
-					"thumbnail.png",
-					"image/png"
-				)
-			});
-
-			if (!string.IsNullOrEmpty(fileHash))
-				request.SetRequestHeader("x-file-hash", fileHash);
-
-			// Send request with progress monitoring if callback provided
-			if (onProgress != null)
-				request.HandleUploadProgress((progress, _) => onProgress.Invoke(progress), cancellationToken);
-
-			if (!await request.Send(cancellationToken)) {
-				Logger.LogError($"Failed during sending request to upload thumbnail for avatar {ide} on {address}");
-				return false;
-			}
-
-			if (request.Ok())
+				onProgress?.Invoke(1f);
 				return true;
-
-			Logger.LogError($"Failed to upload thumbnail for avatar {ide} on {address}");
-			return false;
-
+			} catch (Exception ex) {
+				Logger.LogError(new Exception($"Failed to add an image to avatar {ide} on {address}", ex));
+				return false;
+			} finally {
+				try {
+					if (File.Exists(path))
+						File.Delete(path);
+				} catch (Exception ex) {
+					Logger.LogWarning($"Failed to remove the temporary image '{path}': {ex.Message}");
+				}
+			}
 		}
-
-		public async UniTask<UploadAssetResponse> UploadAssetFile(Identifier ide, uint assetId, string filePath, string fileHash = null, Action<float> onProgress = null, CancellationToken cancellationToken = default) {
-			var (id, address) = Optimize(ide);
-			if (address == Identifier.LOCAL_SERVER) {
-				Logger.LogError($"Cannot fetch world {ide} from {address}");
-				return null;
-			}
-
-			var request = await RequestNode.To(address, $"/avatars/{id}/assets/{assetId}/file");
-			if (request == null) {
-				Logger.LogError($"Failed to create request for avatar {ide}");
-				return null;
-			}
-
-			request.method = RequestExtension.Method.POST;
-			if (onProgress != null)
-				request.HandleUploadProgress((progress, _) => onProgress?.Invoke(progress), cancellationToken);
-
-			request.SetBody(new List<IMultipartFormSection>() {
-				new MultipartFormFileSection(
-					"file",
-					await File.ReadAllBytesAsync(filePath, cancellationToken),
-					Path.GetFileName(filePath),
-					"application/octet-stream"
-				)
-			});
-
-			request.SetRequestHeader("Connection", "keep-alive");
-			if (!string.IsNullOrEmpty(fileHash))
-				request.SetRequestHeader("X-File-Hash", fileHash);
-
-			if (!await request.Send(cancellationToken)) {
-				Logger.LogError($"Failed during sending request to upload asset file for avatar {ide} on {address}");
-				return null;
-			}
-
-			if (request.responseCode != 202) {
-				Logger.LogError($"Status code {request.responseCode} received when uploading asset file for avatar {ide} on {address}, expected 202 Accepted.");
-				return null;
-			}
-
-			var response = await request.Node<UploadAssetResponse>(cancellationToken);
-			if (response.HasError()) {
-				Logger.LogError($"Failed to upload asset file for avatar {ide} on {address}: {response.Error.Message}");
-				return null;
-			}
-
-			return response.Data;
-		}
-
-		public async UniTask<AssetStatusResponse> GetAssetStatus(Identifier ide, uint assetId, CancellationToken cancellationToken = default) {
-			var (id, address) = Optimize(ide);
-			if (address == Identifier.LOCAL_SERVER) {
-				Logger.LogError($"Cannot fetch world {ide} from {address}");
-				return null;
-			}
-
-			var request = await RequestNode.To(address, $"/avatars/{id}/assets/{assetId}/status");
-			if (request == null) {
-				Logger.LogError($"Failed to create request for avatar {ide}");
-				return null;
-			}
-
-			await request.Send(cancellationToken);
-
-			if (!request.Ok()) {
-				Logger.LogError($"Failed to get asset status for avatar {ide} on {address}");
-				return null;
-			}
-
-			var response = await request.Node<AssetStatusResponse>(cancellationToken);
-			if (response.HasError()) {
-				Logger.LogError($"Failed to get asset status for avatar {ide} on {address}: {response.Error.Message}");
-				return null;
-			}
-
-			return response.Data;
-		}
-
-		public async UniTask<string> DownloadAssetFile(Identifier ide, uint assetId, string hash = null, Action<float> onProgress = null, CancellationToken cancellationToken = default) {
-			var (id, address) = Optimize(ide);
-			if (address == Identifier.LOCAL_SERVER) {
-				Logger.LogError($"Cannot fetch world {ide} from {address}");
-				return null;
-			}
-
-			var output = Path.Join(Application.temporaryCachePath, string.IsNullOrEmpty(hash) ? $"{ide}_{assetId}" : hash);
-
-			var request = await RequestNode.To(address, $"/avatars/{id}/assets/{assetId}/file");
-			if (request == null) {
-				Logger.LogError($"Failed to create request for avatar {ide}");
-				return null;
-			}
-
-			// Use DownloadHandlerFile to save directly to file
-			request.downloadHandler = new DownloadHandlerFile(output) { removeFileOnAbort = true };
-
-			// Send request with progress monitoring if callback provided
-			if (onProgress != null)
-				request.HandleDownloadProgress((progress, _) => onProgress.Invoke(progress), cancellationToken);
-
-			if (!await request.Send(cancellationToken) || !request.Ok()) {
-				Logger.LogError($"Failed to download asset file for avatar {ide} from {address}");
-				return null;
-			}
-
-			if (!File.Exists(output)) {
-				Logger.LogError($"Downloaded asset file for avatar {ide} does not exist at expected path: {output}");
-				return null;
-			}
-
-			if (!string.IsNullOrEmpty(hash) && Hashing.HashFile(output) != hash) {
-				Logger.LogError($"Downloaded asset file for avatar {ide} does not match expected hash: {hash}");
-				File.Delete(output); // Clean up if hash doesn't match
-				return null;
-			}
-
-			Logger.LogDebug($"Successfully downloaded asset file for avatar {ide} to {output}");
-			return output;
-		}
-
 
 		[Serializable]
 		public class Favorites : IFavorites {
@@ -408,10 +311,6 @@ namespace Nox.Avatars.Runtime.Network {
 			#pragma warning restore UAC1001
 		}
 
-		/// <summary>
-		/// Fetch favorite avatars from the specified server
-		/// </summary>
-		/// <returns></returns>
 		public async UniTask<Favorites> FetchFavorites(uint group = 0, bool pub = true) {
 			var key   = $"{(pub ? "public." : "")}favorites.avatars.{group}";
 			var entry = await Main.Instance.TableAPI.Get(key);
@@ -427,22 +326,59 @@ namespace Nox.Avatars.Runtime.Network {
 		}
 
 		/// <summary>
-		/// Add a avatar to favorites on the specified server
+		/// Search every favorite group of avatars, public and private, and stop at the first group containing the given identifier.
 		/// </summary>
-		/// <param name="identifier"></param>
-		/// <param name="group"></param>
-		/// <param name="pub"></param>
-		/// <returns></returns>
+		/// <param name="identifier">Identifier of the avatar to look for.</param>
+		/// <returns>The key of the first group containing the avatar, or <c>null</c> when it is not a favorite.</returns>
+		public async UniTask<string> FindFavoriteGroup(Identifier identifier) {
+			var page = await Main.Instance.TableAPI.List(0u, 100u, filter: "*favorites.avatars*");
+
+			while (page?.Items != null) {
+				var references = page.Items
+					.Where(r => r?.Key != null && IsFavoriteAvatarKey(r.Key))
+					.OrderBy(r => IsPublicKey(r.Key) ? 0 : 1)
+					.ThenBy(r => FavoriteGroup(r.Key));
+
+				foreach (var reference in references) {
+					var favorites = await FetchFavoritesByKey(reference.Key);
+					if (favorites?.Values?.Any(v => v.Equals(identifier)) == true)
+						return reference.Key;
+				}
+
+				if (!page.HasNext())
+					break;
+				page = await page.Next();
+			}
+
+			return null;
+		}
+
+		private static bool IsFavoriteAvatarKey(string key)
+			=> key.StartsWith("favorites.avatars.", StringComparison.Ordinal)
+				|| key.StartsWith("public.favorites.avatars.", StringComparison.Ordinal);
+
+		private static bool IsPublicKey(string key)
+			=> key.StartsWith("public.", StringComparison.Ordinal);
+
+		private async UniTask<Favorites> FetchFavoritesByKey(string key) {
+			var entry = await Main.Instance.TableAPI.Get(key);
+			if (entry == null)
+				return null;
+			var result = JsonConvert.DeserializeObject<Favorites>(entry.AsString);
+			result.Key = entry.Key;
+			return result;
+		}
+
+		private static int FavoriteGroup(string key) {
+			var separator = key.LastIndexOf('.');
+			return separator >= 0 && int.TryParse(key.Substring(separator + 1), out var group)
+				? group
+				: int.MaxValue;
+		}
+
 		public async UniTask<Favorites> AddFavorite(Identifier identifier, uint group = 0, bool pub = true)
 			=> await AddFavorites(new[] { identifier }, group, pub);
 
-		/// <summary>
-		/// Add avatars to favorites on the specified server
-		/// </summary>
-		/// <param name="identifier"></param>
-		/// <param name="group"></param>
-		/// <param name="pub"></param>
-		/// <returns></returns>
 		public async UniTask<Favorites> AddFavorites(Identifier[] identifier, uint group = 0, bool pub = true) {
 			var e = await FetchFavorites(group, pub);
 			e.Values = identifier
@@ -452,33 +388,18 @@ namespace Nox.Avatars.Runtime.Network {
 
 			var entry = await Main.Instance.TableAPI.Set(
 				e.Key,
-				JsonConvert.SerializeObject(e)
+				JsonConvert.SerializeObject(e),
+				"application/json+favorite"
 			);
 
-			if (entry != null)
-				return null;
-
-			Logger.LogError("Failed to add favorites: entry not found.");
+			if (entry == null)
+				Logger.LogError("Failed to add favorites: entry not found.");
 			return e;
 		}
 
-		/// <summary>
-		/// Remove a avatar from favorites on the specified server
-		/// </summary>
-		/// <param name="identifier"></param>
-		/// <param name="group"></param>
-		/// <param name="pub"></param>
-		/// <returns></returns>
 		public async UniTask<Favorites> RemoveFavorite(Identifier identifier, uint group = 0, bool pub = true)
 			=> await RemoveFavorites(new[] { identifier }, group, pub);
 
-		/// <summary>
-		/// Remove avatars from favorites on the specified server
-		/// </summary>
-		/// <param name="identifier"></param>
-		/// <param name="group"></param>
-		/// <param name="pub"></param>
-		/// <returns></returns>
 		public async UniTask<Favorites> RemoveFavorites(Identifier[] identifier, uint group = 0, bool pub = true) {
 			var e = await FetchFavorites(group, pub);
 			e.Values = e.Values
@@ -491,10 +412,8 @@ namespace Nox.Avatars.Runtime.Network {
 				"application/json+favorite"
 			);
 
-			if (entry != null)
-				return null;
-
-			Logger.LogError($"Failed to add favorites: entry not found.");
+			if (entry == null)
+				Logger.LogError("Failed to remove favorites: entry not found.");
 			return e;
 		}
 	}

@@ -1,8 +1,10 @@
 using Nox.Avatars.Runtime.client;
 using Cysharp.Threading.Tasks;
 using Nox.Avatars.Controllers;
+using Nox.CCK.Convertors;
 using Nox.CCK.Language;
 using Nox.CCK.Network;
+using Nox.CCK.Network.Assets;
 using Nox.CCK.Utils;
 using Nox.UI;
 using Nox.UI.Widgets;
@@ -62,7 +64,7 @@ namespace Nox.Avatars.Runtime.widget {
 			_label.UpdateText(
 				"value",
 				new[] {
-					avatar.Title
+					avatar.Title?.Resolve()
 					?? identifier.ToString()
 				}
 			);
@@ -71,7 +73,7 @@ namespace Nox.Avatars.Runtime.widget {
 		}
 
 		private async UniTask UpdateBanner(IAvatar avatar) {
-			var url = avatar.Thumbnail;
+			var url = avatar.BestImage(16f / 9f)?.Url;
 
 			if (string.IsNullOrEmpty(url)) {
 				_container.SetActive(false);

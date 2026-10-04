@@ -22,7 +22,8 @@ namespace Nox.Avatars.Runtime.Editor {
 		// UI Elements - Main
 		private VisualElement _content;
 		private ObjectField _selectedField;
-		private DropdownField _platformEnum;
+		private VisualElement _platformEnum;
+		private PlatformPopupField _platformField;
 
 		// UI Elements - Attach Section
 		private VisualElement _attachContainer;
@@ -129,8 +130,9 @@ namespace Nox.Avatars.Runtime.Editor {
 		private void CacheUIElements(VisualElement root) {
 			// Main
 			_selectedField = root.Q<ObjectField>("selected");
-			_platformEnum = root.Q<DropdownField>("platform");
-			_platformEnum.choices = PlatformExtensions.All.Select(p => p.Display).ToList();
+			_platformEnum = root.Q<VisualElement>("platform");
+			_platformField = new PlatformPopupField();
+			_platformEnum.Add(_platformField);
 			_publishButton = root.Q<Button>("publish");
 
 			// Attach section
@@ -183,7 +185,7 @@ namespace Nox.Avatars.Runtime.Editor {
 
 		private void SetupEventHandlers() {
 			_selectedField?.RegisterCallback<ChangeEvent<AvatarDescriptor>>(OnValueChanged);
-			_platformEnum?.RegisterCallback<ChangeEvent<string>>(OnPlatformChanged);
+			_platformEnum?.RegisterCallback<ChangeEvent<Platform[]>>(OnPlatformChanged);
 			_publishButton?.RegisterCallback<ClickEvent>(evt => OnPublishAsync().Forget());
 			_attachButton?.RegisterCallback<ClickEvent>(evt => OnAttachAsync().Forget());
 			_infoUpdateButton?.RegisterCallback<ClickEvent>(evt => OnUpdateInfoAsync().Forget());
@@ -210,7 +212,7 @@ namespace Nox.Avatars.Runtime.Editor {
 		private void OnAvatarSelected(AvatarDescriptor descriptor) {
 			_selectedField?.SetValueWithoutNotify(descriptor);
 			_publishButton?.SetEnabled(descriptor && AvatarNotificationHelper.Allowed && _avatar != null);
-			_platformEnum?.SetValueWithoutNotify(!descriptor ? Platform.None.Display : descriptor.Target.Display);
+			_platformField?.SetValueWithoutNotify(!descriptor ? Array.Empty<Platform>() : descriptor.Targets);
 			_platformEnum?.SetEnabled(descriptor);
 			_assetVersionField?.SetValueWithoutNotify(descriptor?.publishVersion ?? 0);
 
@@ -220,18 +222,20 @@ namespace Nox.Avatars.Runtime.Editor {
 		private static void OnValueChanged(ChangeEvent<AvatarDescriptor> evt)
 			=> AvatarDescriptorHelper.SetCurrentAvatar(evt.newValue);
 
-		private void OnPlatformChanged(ChangeEvent<string> evt) {
+		private void OnPlatformChanged(ChangeEvent<Platform[]> evt) {
 			var avatar = AvatarDescriptorHelper.CurrentAvatar;
 			if (!avatar) return;
-			var platform = evt.newValue.GetPlatformFromName();
-			if (platform != Platform.None && !platform.IsSupported()) {
-				EditorUtility.DisplayDialog("Error", $"\"{platform}\" is not supported.", "Ok");
-				Logger.LogError($"Platform \"{platform.GetPlatformName()}\" ({platform.GetBuildTarget()}) is not supported.");
-				_platformEnum?.SetValueWithoutNotify(evt.previousValue);
-				return;
-			}
 
-			avatar.Target = platform;
+			// Un target installé est requis pour chaque plateforme sélectionnée.
+			foreach (var platform in evt.newValue)
+				if (!platform.IsSupported()) {
+					EditorUtility.DisplayDialog("Error", $"\"{platform.GetPlatformName()}\" is not supported.", "Ok");
+					Logger.LogError($"Platform \"{platform.GetPlatformName()}\" ({platform.GetBuildTarget()}) is not supported.");
+					_platformField?.SetValueWithoutNotify(evt.previousValue);
+					return;
+				}
+
+			avatar.Targets = evt.newValue;
 			EditorUtility.SetDirty(avatar);
 		}
 

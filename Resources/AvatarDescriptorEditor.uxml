@@ -7,13 +7,13 @@
         </ui:VisualElement>
         <ui:VisualElement style="padding-top: 10px; padding-right: 10px; padding-bottom: 0; padding-left: 10px;">
             <ui:Label text="Publisher" style="font-size: 14px; -unity-font-style: bold; margin-bottom: 5px;" />
-            <uie:PropertyField name="target" label="Target Platform" />
+            <uie:PropertyField name="target" label="Target Platforms" />
             <uie:PropertyField name="publishId" label="Publish ID" />
             <uie:PropertyField name="publishServer" label="Publish Server" />
             <uie:PropertyField name="publishVersion" label="Publish Version" />
             
             <ui:Label text="Modules" style="font-size: 14px; -unity-font-style: bold; margin-bottom: 5px; margin-top: 10px;" />
-            <uie:PropertyField name="modules" />
+            <uie:PropertyField name="modules" label="Detected Modules" />
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

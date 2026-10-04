@@ -12,6 +12,7 @@ using Nox.CCK.Mods.Initializers;
 using Nox.CCK.Utils;
 using Nox.Controllers;
 using Nox.Network;
+using Nox.Network.Assets;
 using Nox.Search;
 using Nox.Settings;
 using Nox.Tables;
@@ -39,6 +40,14 @@ namespace Nox.Avatars.Runtime
             => Instance.CoreAPI.ModAPI
                        .GetMod("network")
                        ?.GetInstance<INetworkAPI>();
+
+        /// <summary>Generic asset pipeline, shared with every other asset type.</summary>
+        public static IAssetsAPI AssetsAPI
+            => Instance == null
+                ? null
+                : Instance.CoreAPI.ModAPI
+                    .GetMod("network")
+                    ?.GetInstance<IAssetsAPI>();
 
         static internal ISearchAPI SearchAPI
             => Instance.CoreAPI.ModAPI
@@ -186,35 +195,26 @@ namespace Nox.Avatars.Runtime
             => await AvatarLoader.LoadFromCache(hash, arguments, progress, token)
                 ?? await LoadError(arguments, progress, token);
 
-        public async UniTask<IAvatar> Fetch(Identifier identifier)
-            => await Network.Fetch(identifier);
+        public async UniTask<IAvatar> Fetch(Identifier identifier, CancellationToken token = default)
+            => await Network.Fetch(identifier, token);
 
         public ISearchRequest MakeSearchRequest()
             => new SearchRequest();
 
         public async UniTask<IAvatar> Create(ICreateAvatarRequest data, string server)
-            => await Network.Create(CreateAvatarRequest.FromBase(data), server);
+            => await Network.Create(AvatarCreateRequest.From(data), server);
 
         public async UniTask<IAvatar> Update(Identifier identifier, IUpdateAvatarRequest form)
-            => await Network.Update(identifier, UpdateAvatarRequest.FromBase(form));
+            => await Network.Update(identifier, AvatarUpdateRequest.From(form));
 
         public async UniTask<bool> Delete(Identifier identifier)
             => await Network.Delete(identifier);
 
-        public async UniTask<IAssetSearchResponse> SearchAssets(Identifier identifier, IAssetSearchRequest data)
-            => await Network.SearchAssets(identifier, AssetSearchRequest.From(data));
+        public async UniTask<IAssetFile> ResolveBundle(Identifier identifier, CancellationToken token = default)
+            => await Network.ResolveBundle(identifier, token);
 
-        public async UniTask<bool> UploadThumbnail(Identifier identifier, Texture2D texture, Action<float> onProgress = null)
-            => await Network.UploadThumbnail(identifier, texture, onProgress);
-
-        public async UniTask<IUploadAssetResponse> UploadAssetFile(Identifier identifier, uint assetId, string filePath, string fileHash = null, Action<float> onProgress = null)
-            => await Network.UploadAssetFile(identifier, assetId, filePath, fileHash, onProgress);
-
-        public async UniTask<IAssetStatusResponse> GetAssetStatus(Identifier identifier, uint assetId)
-            => await Network.GetAssetStatus(identifier, assetId);
-
-        public async UniTask<IAvatarAsset> CreateAsset(Identifier identifier, ICreateAssetRequest data)
-            => await Network.CreateAsset(identifier, CreateAssetRequest.FromBase(data));
+        public async UniTask<bool> AddImage(Identifier identifier, Texture2D texture, Action<float> onProgress = null)
+            => await Network.AddImage(identifier, texture, onProgress);
 
         public ICaching DownloadToCache(string url, string hash = null, UnityAction<float> progress = null, CancellationToken token = default)
         {
@@ -222,6 +222,9 @@ namespace Nox.Avatars.Runtime
             if (progress != null) caching.OnProgress.AddListener(progress);
             return caching;
         }
+
+        public ICaching GetDownload(string url, string hash)
+            => Cache.GetDownload(url, hash);
 
         public void RemoveFromCache(string hash)
             => Cache.Clear(hash);
@@ -239,7 +242,7 @@ namespace Nox.Avatars.Runtime
             => await Network.FetchFavorites();
 
         public async UniTask<ISearchResponse> Search(ISearchRequest data)
-            => await Network.Search(data);
+            => await Network.Search(SearchRequest.From(data));
     }
 
 }

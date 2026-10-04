@@ -1,9 +1,10 @@
 using System;
-using System.Linq;
 using Cysharp.Threading.Tasks;
 using Nox.CCK.Avatars;
 using Nox.CCK.Mods.Events;
+using Nox.CCK.Network.Assets;
 using Nox.CCK.Utils;
+using Nox.Network.Assets;
 using Nox.UI;
 using UnityEngine;
 using Logger = Nox.CCK.Utils.Logger;
@@ -22,7 +23,7 @@ namespace Nox.Avatars.Runtime.client {
 		private AvatarComponent _component;
 		private Identifier _identifier;
 		public IAvatar Avatar;
-		public IAvatarAsset Asset;
+		public IAssetFile Asset;
 		public ushort Version = ushort.MaxValue;
 		private bool _isLoading;
 
@@ -53,7 +54,7 @@ namespace Nox.Avatars.Runtime.client {
 				case "identifier" when T(context, 1, out Identifier ai0):
 					return OnPageByIdentifier(menu, context, ai0);
 				case "avatar" when T(context, 1, out IAvatar a0):
-					var asset0 = T(context, 2, out IAvatarAsset avatarAsset) ? avatarAsset : null;
+					var asset0 = T(context, 2, out IAssetFile avatarAsset) ? avatarAsset : null;
 					return OnPageByAvatar(menu, context, a0, asset0);
 			}
 
@@ -73,7 +74,7 @@ namespace Nox.Avatars.Runtime.client {
 			return page;
 		}
 
-		private static AvatarPage OnPageByAvatar(IMenu menu, object[] context, IAvatar avatar, IAvatarAsset asset) {
+		private static AvatarPage OnPageByAvatar(IMenu menu, object[] context, IAvatar avatar, IAssetFile asset) {
 			var page = new AvatarPage {
 				MId         = menu.Id,
 				_context    = context,
@@ -110,16 +111,7 @@ namespace Nox.Avatars.Runtime.client {
 			if (_isLoading)
 				return;
 			_isLoading = true;
-			var searchResult = await Main.Instance.Network.SearchAssets(
-				_identifier,
-				new AssetSearchRequest {
-					Limit     = 1,
-					Versions  = new[] { Version },
-					Engines   = new[] { EngineExtensions.CurrentEngine.GetEngineName() },
-					Platforms = new[] { PlatformExtensions.CurrentPlatform.GetPlatformName() }
-				}
-			);
-			Asset      = searchResult?.Items?.FirstOrDefault();
+			Asset      = await Main.Instance.Network.ResolveBundle(_identifier);
 			_isLoading = false;
 			if (update)
 				_component.UpdateContent(Avatar, Asset);
@@ -131,8 +123,8 @@ namespace Nox.Avatars.Runtime.client {
 				return;
 			}
 
-			Main.Instance.RemoveFromCache(Asset.Hash);
-			Logger.Log($"Removed asset from cache: {Asset.Hash}");
+			Main.Instance.RemoveFromCache(Asset.CacheKey());
+			Logger.Log($"Removed asset from cache: {Asset.CacheKey()}");
 		}
 
 		public void CancelDownload()
@@ -150,7 +142,7 @@ namespace Nox.Avatars.Runtime.client {
 			}
 
 			var cache = Main.Instance
-				.DownloadToCache(Asset.Url, Asset.Hash);
+				.DownloadToCache(Asset.Url, Asset.CacheKey());
 
 			cache.Start().Forget();
 		}
@@ -203,11 +195,11 @@ namespace Nox.Avatars.Runtime.client {
 		}
 
 		public bool InCache()
-			=> Asset != null && Main.Instance.HasInCache(Asset.Hash);
+			=> Asset != null && Main.Instance.HasInCache(Asset.CacheKey());
 
 		private Caching.Cache GetDownload()
 			=> Asset != null
-				? Main.Instance.Cache.GetDownload(Asset.Url, Asset.Hash)
+				? Main.Instance.Cache.GetDownload(Asset.Url, Asset.CacheKey())
 				: null;
 
 		public (bool, float) IsDownloading() {

@@ -19,7 +19,8 @@
         "Nox.Avatars.Runtime",
         "Nox.Avatars.Pipeline",
         "Nox.Avatars.Parameters",
-        "UniTask"
+        "UniTask",
+        "Nox.CCK.Network"
     ],
     "includePlatforms": [
         "Editor"

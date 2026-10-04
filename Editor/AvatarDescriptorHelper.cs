@@ -48,6 +48,39 @@ namespace Nox.Avatars.Editor {
 			}
 		}
 
+		/// <summary>
+		/// Re-résout l'avatar courant après une opération qui a pu recharger les scènes ou détruire le
+		/// descriptor (build, refresh) et prévient les listeners si nécessaire. Sans effet quand la
+		/// référence courante est toujours vivante.
+		/// </summary>
+		public static void Rebind() {
+			var previous = CurrentAvatar;
+
+			if (previous && previous.gameObject.activeInHierarchy)
+				return;
+
+			// Résolution complète : la référence courante ne peut plus servir
+			CurrentAvatar = null;
+			Find();
+
+			// Une référence détruite est « égale » à null : SetCurrentAvatar n'aurait rien signalé alors
+			// que les panels tiennent encore l'ancienne référence.
+			if (CurrentAvatar == null && !ReferenceEquals(previous, null))
+				OnAvatarSelected?.Invoke(null);
+		}
+
+		/// <summary>
+		/// Descriptor vivant à utiliser après une attente : une recharge de scène détruit la référence
+		/// capturée avant l'<c>await</c>, et y écrire lève une <c>MissingReferenceException</c>. Renvoie
+		/// <c>null</c> quand plus aucun avatar n'est utilisable.
+		/// </summary>
+		public static AvatarDescriptor Live(AvatarDescriptor fallback) {
+			if (CurrentAvatar && CurrentAvatar.gameObject)
+				return CurrentAvatar;
+
+			return fallback && fallback.gameObject ? fallback : null;
+		}
+
 		public static void SetCurrentAvatar(AvatarDescriptor newAvatar) {
 			if (ReferenceEquals(CurrentAvatar, newAvatar)) return;
 			Logger.LogDebug($"Current avatar changed to {(newAvatar ? newAvatar.name : "null")}");

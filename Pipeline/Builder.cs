@@ -49,7 +49,6 @@ namespace Nox.Avatars.Pipeline {
 
 			var data = new BuildData {
 				Descriptor = descriptor,
-				ShowDialog = true,
 				OutputPath = path
 			};
 
@@ -110,12 +109,13 @@ namespace Nox.Avatars.Pipeline {
 			}
 
 			try {
-				if (data.Target == Platform.None)
-					data.Target = PlatformExtensions.CurrentPlatform; // Set default filename if not provided
-				if (string.IsNullOrEmpty(data.Filename))
-					data.Filename = GenerateDefaultFilename(data.Descriptor.gameObject.scene.name, data.Target); // Set randomized temp path if not provided
+				var targets = NormalizeTargets(data?.Descriptor ? data.Descriptor.Targets : null);
+				// Le bundle est nommé d'après l'avatar (GameObject racine) et non d'après la scène
+				var avatarName = data?.Descriptor ? data.Descriptor.gameObject.name : null;
+
 				if (string.IsNullOrEmpty(data.TempPath))
-					data.TempPath = $"Assets/Temp/{GenerateRandomHash()}/"; // Report progress: Validation
+					data.TempPath = $"Assets/Temp/{GenerateRandomHash()}/";
+
 				data.ProgressCallback?.Invoke(0.05f, "Validating build prerequisites...");
 				await UniTask.Yield();
 
@@ -173,22 +173,30 @@ namespace Nox.Avatars.Pipeline {
 						return Finish(processing);
 					}
 
-					// Report progress: Building AssetBundle
-					data.ProgressCallback?.Invoke(0.80f, "Building AssetBundle...");
-					await UniTask.NextFrame();
+					// Un AssetBundle par plateforme ciblée
+					var outputs = new List<BuildOutput>();
+					foreach (var platform in targets) {
+						data.Target   = platform;
+						data.Filename = GenerateDefaultFilename(avatarName, platform);
 
-					// Création de l'AssetBundle des scènes
-					var assetBundleResult = await BuildPrefabsAssetBundle(data);
-					if (assetBundleResult.Type != BuildResultType.Success) {
-						EditorSceneManager.RestoreSceneManagerSetup(rollback);
-						return Finish(assetBundleResult);
+						data.ProgressCallback?.Invoke(
+							0.80f,
+							$"Building AssetBundle for {platform.GetPlatformName()}... ({outputs.Count + 1}/{targets.Length})"
+						);
+						await UniTask.Yield();
+
+						var assetBundleResult = await BuildPrefabsAssetBundle(data);
+						if (assetBundleResult.Type != BuildResultType.Success) {
+							EditorSceneManager.RestoreSceneManagerSetup(rollback);
+							return Finish(assetBundleResult);
+						}
+
+						outputs.Add(new BuildOutput(platform, assetBundleResult.Output));
 					}
 
 					// Report progress: Cleanup
 					data.ProgressCallback?.Invoke(0.95f, "Cleaning up...");
 					await UniTask.Yield();
-
-					// TODO: Cleanup temporary files
 
 					// Report progress: Complete
 					data.ProgressCallback?.Invoke(1.0f, "Build completed successfully!");
@@ -196,8 +204,8 @@ namespace Nox.Avatars.Pipeline {
 
 					return Finish(
 						new BuildResult {
-							Type = BuildResultType.Success,
-							Output = assetBundleResult.Output
+							Type    = BuildResultType.Success,
+							Outputs = outputs.ToArray()
 						}
 					);
 				} catch (Exception e) {
@@ -248,21 +256,23 @@ namespace Nox.Avatars.Pipeline {
 					Message = "Unity is currently in play mode. Please stop playing before building."
 				};
 
-			if (data.Target == Platform.None)
+			var targets = NormalizeTargets(data?.Descriptor ? data.Descriptor.Targets : null);
+
+			if (targets.Length == 0)
 				return new BuildResult {
 					Type = BuildResultType.InvalidTarget,
 					Message = "No build target specified. Please select a valid target platform."
 				};
 
-			if (!data.Target.IsSupported())
-				return new BuildResult {
-					Type = BuildResultType.UnsupportedTarget,
-					Message = $"The build target {data.Target} is not supported."
-				};
+			foreach (var platform in targets)
+				if (!platform.IsSupported())
+					return new BuildResult {
+						Type = BuildResultType.UnsupportedTarget,
+						Message = $"The build target {platform.GetPlatformName()} is not supported."
+					};
 
 			return new BuildResult {
-				Type = BuildResultType.Success,
-				Output = data.OutputPath
+				Type = BuildResultType.Success
 			};
 		}
 
@@ -297,8 +307,7 @@ namespace Nox.Avatars.Pipeline {
 			Directory.CreateDirectory(tempPath);
 
 			return new BuildResult {
-				Type = BuildResultType.Success,
-				Output = tempPath
+				Type = BuildResultType.Success
 			};
 		}
 
@@ -365,8 +374,7 @@ namespace Nox.Avatars.Pipeline {
 			await UniTask.Yield();
 
 			return new BuildResult {
-				Type = BuildResultType.Success,
-				Output = null
+				Type = BuildResultType.Success
 			};
 		}
 
@@ -455,8 +463,7 @@ namespace Nox.Avatars.Pipeline {
 
 				Logger.Log($"Successfully processed avatar prefab");
 				return new BuildResult {
-					Type = BuildResultType.Success,
-					Output = prefabPath
+					Type = BuildResultType.Success
 				};
 
 				void CheckForProblematicComponents(GameObject go) {
@@ -635,8 +642,8 @@ namespace Nox.Avatars.Pipeline {
 				Logger.Log($"Avatar AssetBundle '{data.Filename}' built successfully at: {outputPath}");
 				Logger.Log($"Avatar prefab built without dependencies");
 				return new BuildResult {
-					Type = BuildResultType.Success,
-					Output = Path.Combine(outputPath, data.Filename)
+					Type    = BuildResultType.Success,
+					Outputs = new[] { new BuildOutput(data.Target, Path.Combine(outputPath, data.Filename)) }
 				};
 			} catch (Exception e) {
 				Logger.LogError($"Avatar AssetBundle build failed: {e.Message}");
@@ -833,19 +840,47 @@ namespace Nox.Avatars.Pipeline {
 
 
 		/// <summary>
-		/// Generates a default filename for the asset bundle based on date, random int, and main scene name
+		/// Cibles du build : celles demandées, dédupliquées et dans l'ordre de
+		/// <see cref="PlatformExtensions.All"/>, avec repli sur la plateforme courante.
 		/// </summary>
-		/// <param name="mainSceneName">The name of the main scene</param>
-		/// <param name="platform"></param>
-		/// <returns>A filename in the format: date-sceneName.noxw</returns>
-		private static string GenerateDefaultFilename(string mainSceneName, Platform platform) {
+		private static Platform[] NormalizeTargets(Platform[] requested) {
+			var targets = (requested ?? Array.Empty<Platform>())
+				.Where(platform => platform != Platform.None)
+				.Distinct()
+				.OrderBy(platform => Array.IndexOf(PlatformExtensions.All, platform))
+				.ToArray();
+
+			return targets.Length > 0
+				? targets
+				: new[] { PlatformExtensions.CurrentPlatform };
+		}
+
+		/// <summary>
+		/// Generates a default filename for the asset bundle based on date, avatar name and platform.
+		/// </summary>
+		/// <param name="avatarName">The name of the avatar's root GameObject</param>
+		/// <param name="platform">The target platform</param>
+		/// <returns>A filename in the format: date-avatarName-platform.na</returns>
+		private static string GenerateDefaultFilename(string avatarName, Platform platform) {
 			var date = DateTime.Now.ToString("yyyy-MM-dd-HHmm");
-			var sceneName = mainSceneName.ToLowerInvariant();
+			var name = SanitizeBundleName(avatarName);
 
-			// Remove any invalid filename characters from scene name
-			sceneName = Regex.Replace(sceneName, @"[^a-z0-9\-_]", "");
+			return $"{date}-{name}-{platform.GetPlatformName()}.na";
+		}
 
-			return $"{date}-{sceneName}-{platform.GetPlatformName()}.noxw";
+		/// <summary>
+		/// Normalizes a GameObject name into a bundle-name friendly slug (lower case, dashed, ASCII).
+		/// </summary>
+		private static string SanitizeBundleName(string name) {
+			if (string.IsNullOrWhiteSpace(name))
+				return "avatar";
+
+			var slug = name.Trim().ToLowerInvariant();
+			slug = Regex.Replace(slug, @"\s+", "-"); // Les espaces deviennent des tirets
+			slug = Regex.Replace(slug, @"[^a-z0-9\-_]", ""); // Retire les caractères invalides pour un nom de fichier
+			slug = Regex.Replace(slug, @"-{2,}", "-").Trim('-');
+
+			return string.IsNullOrEmpty(slug) ? "avatar" : slug;
 		}
 
 		/// <summary>

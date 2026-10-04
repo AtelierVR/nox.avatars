@@ -102,7 +102,7 @@ namespace Nox.Avatars.Runtime.Editor {
 				Logger.Log("Uploading thumbnail...");
 				_thumbnailStatus.text = "Uploading thumbnail...";
 
-				var success = await Main.Instance.Network.UploadThumbnail(
+				var success = await Main.Instance.Network.AddImage(
 					_avatar.Identifier,
 					texture,
 					progress => _thumbnailStatus.text = $"Uploading thumbnail... {progress * 100:F0}%"

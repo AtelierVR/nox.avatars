@@ -1,11 +1,13 @@
 using System.Linq;
 using Cysharp.Threading.Tasks;
 using Nox.Avatars.Controllers;
-using Nox.CCK.Avatars;
+using Nox.CCK.Convertors;
 using Nox.CCK.Language;
 using Nox.CCK.Network;
+using Nox.CCK.Network.Assets;
 using Nox.CCK.Users;
 using Nox.CCK.Utils;
+using Nox.Network.Assets;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -120,18 +122,19 @@ namespace Nox.Avatars.Runtime.client {
 			descriptionContainer.SetActive(false);
 		}
 
-		public void UpdateContent(IAvatar avatar, IAvatarAsset asset) {
+		public void UpdateContent(IAvatar avatar, IAssetFile asset) {
 			if (avatar == null)
 				return;
 
-			title.UpdateText("avatar.title", new[] { avatar.Title });
-			label.UpdateText("avatar.about.title", new[] { avatar.Title ?? avatar.Identifier.ToString() });
+			title.UpdateText("avatar.title", new[] { avatar.Title?.Resolve() });
+			label.UpdateText("avatar.about.title", new[] { avatar.Title?.Resolve() ?? avatar.Identifier.ToString() });
 			identifier.UpdateText(
 				"avatar.identifier", new[] { avatar.Identifier.ToString(), avatar.Id.ToString(), avatar.Server }
 			);
 
-			if (!string.IsNullOrEmpty(avatar.Description)) {
-				descriptionText.SetMarkdown(avatar.Description);
+			var description = avatar.Description?.Resolve();
+			if (!string.IsNullOrEmpty(description)) {
+				descriptionText.SetMarkdown(description);
 				descriptionContainer.SetActive(true);
 			} else
 				descriptionContainer.SetActive(false);
@@ -145,7 +148,9 @@ namespace Nox.Avatars.Runtime.client {
 		}
 
 		private void UpdateThumbnail(IAvatar avatar) {
-			if (avatar?.Thumbnail == null) {
+			var url = avatar?.BestImage(1f)?.Url;   // square card slot
+
+			if (string.IsNullOrEmpty(url)) {
 				thumbnail.sprite = null;
 				withThumbnail.SetActive(false);
 				withoutThumbnail.SetActive(true);
@@ -155,7 +160,7 @@ namespace Nox.Avatars.Runtime.client {
 			// Ensure NetworkImage exists on the thumbnail GameObject
 			_networkImage = thumbnail.GetOrAddComponent<NetworkImage>();
 
-			_networkImage.Url = avatar.Thumbnail;
+			_networkImage.Url = url;
 			withThumbnail.SetActive(true);
 			withoutThumbnail.SetActive(false);
 		}
@@ -164,8 +169,10 @@ namespace Nox.Avatars.Runtime.client {
 		#region Favorite Logic
 
 		private async UniTask UpdateFavoriteState() {
-			var favorites = await Main.Instance.Network.FetchFavorites();
-			_isFavorite = favorites.Values.Any(f => f.Equals(Page.Avatar.Identifier));
+			if (Page?.Avatar == null)
+				return;
+			var key     = await Main.Instance.Network.FindFavoriteGroup(Page.Avatar.Identifier);
+			_isFavorite = key != null;
 			HoverFavorite(_isFavoriteHover);
 		}
 

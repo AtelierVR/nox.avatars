@@ -18,11 +18,6 @@ namespace Nox.Avatars {
 		public string Query { get; set; }
 
 		/// <summary>
-		/// Gets or sets an array based on strict search with specific identifiers.
-		/// </summary>
-		public Identifier[] Identifiers { get; set; }
-
-		/// <summary>
 		/// Gets or sets the offset for pagination,
 		/// indicating the number of items to skip before starting
 		/// to collect the result set.

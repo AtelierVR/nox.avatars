@@ -1,6 +1,8 @@
 using System;
 using Cysharp.Threading.Tasks;
 using Nox.Avatars.Editor;
+using Nox.CCK.Convertors;
+using Nox.CCK.Network.Assets;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -45,8 +47,8 @@ namespace Nox.Avatars.Runtime.Editor {
 
 			_infoServerField?.SetValueWithoutNotify(_avatar.Server ?? "");
 			_infoIdField?.SetValueWithoutNotify(_avatar.Id);
-			_infoNameField?.SetValueWithoutNotify(_avatar.Title ?? "");
-			_infoDescriptionField?.SetValueWithoutNotify(_avatar.Description ?? "");
+			_infoNameField?.SetValueWithoutNotify(_avatar.Title?.Resolve() ?? "");
+			_infoDescriptionField?.SetValueWithoutNotify(_avatar.Description?.Resolve() ?? "");
 			UpdateThumbnailPreview();
 		}
 
@@ -56,7 +58,7 @@ namespace Nox.Avatars.Runtime.Editor {
 				return;
 			}
 
-			if (_avatar != null && !string.IsNullOrEmpty(_avatar.Thumbnail)) {
+			if (_avatar != null && !string.IsNullOrEmpty(_avatar.BestImage(1f)?.Url)) {
 				DownloadAndDisplayThumbnail().Forget();
 			}
 			else {
@@ -78,7 +80,7 @@ namespace Nox.Avatars.Runtime.Editor {
 				_thumbnailImage.style.display = DisplayStyle.None;
 				_thumbnailFixButton.style.display = DisplayStyle.None;
 
-				var thumbnailUrl = _avatar.Thumbnail;
+				var thumbnailUrl = _avatar.BestImage(1f)?.Url;
 				var texture = await Main.NetworkAPI.FetchTexture(thumbnailUrl);
 
 				if (texture != null) {
