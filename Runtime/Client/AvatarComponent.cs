@@ -68,7 +68,7 @@ namespace Nox.Avatars.Runtime.client {
 			if (controller is IControllerAvatar ca) {
 				var id = Page.Avatar.Identifier;
 				await UniTask.WhenAll(
-					Main.UserAPI.UpdateCurrent(new UpdateCurrentRequest { Avatar = id.ToString() }),
+					Main.UserAPI.UpdateCurrent(new UpdateCurrentRequest { Avatar = id }),
 					ca.SetAvatar(id)
 				);
 			}
