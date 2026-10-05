@@ -9,29 +9,23 @@ using Nox.CCK.Utils;
 using UnityEngine;
 using Logger = Nox.CCK.Utils.Logger;
 
-namespace Nox.Avatars.Runtime
-{
-	public class AssetBundleRuntimeAvatar : BaseRuntimeAvatar
-	{
+namespace Nox.Avatars.Runtime {
+	public class AssetBundleRuntimeAvatar : BaseRuntimeAvatar {
 		public IAsset Bundle;
 		public string Path;
 		public string CacheId;
 
-		public static async UniTask<AssetBundleRuntimeAvatar> Load(string path, Dictionary<string, object> arguments, Action<float> progress, CancellationToken token)
-		{
+		public static async UniTask<AssetBundleRuntimeAvatar> Load(string path, Dictionary<string, object> arguments, Action<float> progress, CancellationToken token) {
 			progress?.Invoke(0);
 
-			var avatar = new AssetBundleRuntimeAvatar
-			{
+			var avatar = new AssetBundleRuntimeAvatar {
 				Path = path,
 				CacheId = nameof(AssetBundleRuntimeAvatar) + "_" + Guid.NewGuid(),
 				Arguments = arguments
 			};
 
-			try
-			{
-				try
-				{
+			try {
+				try {
 					avatar.Bundle = await GlobalAssetBundleManager.LoadFileAsync(
 						path,
 						avatar.CacheId,
@@ -39,23 +33,18 @@ namespace Nox.Avatars.Runtime
 					);
 
 					progress?.Invoke(.25f);
-				}
-				catch (Exception ex)
-				{
+				} catch (Exception ex) {
 					Logger.LogError(new Exception($"Exception while loading AssetBundle from path: {path}", ex));
 					return null;
 				}
 
 				token.ThrowIfCancellationRequested();
-				try
-				{
+				try {
 					var collections = avatar.Bundle.AssetBundle.LoadAllAssets<ShaderVariantCollection>();
 					foreach (var collection in collections)
 						if (collection && !collection.isWarmedUp)
 							collection.WarmUp();
-				}
-				catch (Exception ex)
-				{
+				} catch (Exception ex) {
 					Logger.LogWarning(new Exception($"Failed to warmup shader variant collections", ex));
 				}
 
@@ -64,8 +53,7 @@ namespace Nox.Avatars.Runtime
 				var assetRequest = avatar.Bundle.AssetBundle.LoadAssetAsync<GameObject>("Avatar");
 
 				// Yield périodique pendant le chargement pour ne pas bloquer
-				while (!assetRequest.isDone)
-				{
+				while (!assetRequest.isDone) {
 					token.ThrowIfCancellationRequested();
 					progress?.Invoke(.25f + assetRequest.progress * .5f);
 					await UniTask.Yield();
@@ -75,8 +63,7 @@ namespace Nox.Avatars.Runtime
 
 				var prefab = obj as GameObject;
 
-				if (!prefab)
-				{
+				if (!prefab) {
 					Logger.LogError($"No prefab found in avatar bundle: {path}");
 					await avatar.Dispose();
 					return null;
@@ -89,8 +76,7 @@ namespace Nox.Avatars.Runtime
 					cancellationToken: token
 				);
 
-				if (!avatar.Root)
-				{
+				if (!avatar.Root) {
 					Logger.LogError($"Failed to instantiate avatar prefab from bundle: {path}");
 					await avatar.Dispose();
 					return null;
@@ -100,8 +86,7 @@ namespace Nox.Avatars.Runtime
 				avatar.Root.name = $"[{avatar.GetType().Name}_{avatar.Id}]";
 				avatar.Descriptor = avatar.Root.GetComponent<IAvatarDescriptor>();
 
-				if (avatar.Descriptor == null)
-				{
+				if (avatar.Descriptor == null) {
 					Logger.LogError($"Avatar prefab does not have a valid descriptor: {path}");
 					await avatar.Dispose();
 					return null;
@@ -113,8 +98,7 @@ namespace Nox.Avatars.Runtime
 					token: token
 				);
 
-				if (!result)
-				{
+				if (!result) {
 					Logger.LogError($"Failed to prepare avatar: {path}");
 					await avatar.Dispose();
 					return null;
@@ -126,18 +110,19 @@ namespace Nox.Avatars.Runtime
 
 				progress?.Invoke(1);
 				return avatar;
-			}
-			catch (OperationCanceledException)
-			{
+			} catch (OperationCanceledException) {
 				await avatar.Dispose();
+				return null;
+			} catch (Exception e) {
+				await avatar.Dispose();
+				Logger.LogError($"Unexpected error while loading avatar '{path}', the avatar has been disposed: {e}");
 				return null;
 			}
 		}
 
 		public override UniTask Dispose()
 		{
-			if (Root)
-			{
+			if (Root) {
 				Root.Destroy();
 				Root = null;
 			}

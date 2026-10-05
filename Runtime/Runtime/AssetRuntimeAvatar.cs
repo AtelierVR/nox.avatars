@@ -77,6 +77,10 @@ namespace Nox.Avatars.Runtime {
 			} catch (OperationCanceledException) {
 				await avatar.Dispose();
 				return null;
+			} catch (Exception e) {
+				await avatar.Dispose();
+				Logger.LogError($"Unexpected error while loading avatar '{path}', the avatar has been disposed: {e}");
+				return null;
 			}
 		}
 
