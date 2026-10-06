@@ -140,8 +140,57 @@ namespace Nox.CCK.Avatars {
 				await UniTask.Yield(cancellationToken: token);
 			}
 
+			SetupColliderLayers(avatar, descriptor);
+
 			progress?.Invoke(1.0f);
 			return true;
+		}
+
+		/// <summary>
+		/// Replace les colliders de l'avatar sur les bonnes layers physiques : l'avatar local sur
+		/// <c>LocalAvatar</c>, les autres (réseau) sur <c>RemoteAvatar</c>, et les colliders des mains sur
+		/// <c>Hand</c>. Les laisser sur <c>Default</c> les fait interagir avec tout (et notamment le sol du
+		/// joueur local, qui les détecte comme ground). La matrice de collisions décide ensuite de quoi
+		/// l'avatar peut interagir (ex. <c>Hand</c> ↔ <c>HandPlayer</c> désactivé pour la paume locale,
+		/// <c>Hand</c> ↔ <c>Grabbable</c> activé pour la saisie).
+		/// </summary>
+		private static void SetupColliderLayers(IRuntimeAvatar avatar, IAvatarDescriptor descriptor) {
+			var anchor = descriptor.Anchor;
+			if (!anchor)
+				return;
+
+			var local = !(avatar.Arguments != null
+				&& avatar.Arguments.TryGetValue("local", out var l) && l is false);
+
+			var bodyLayerName = local ? "LocalAvatar" : "RemoteAvatar";
+			if (!Utils.Layers.LayerExists(bodyLayerName))
+				return;
+
+			var bodyLayer = LayerMask.NameToLayer(bodyLayerName);
+			var handLayer = Utils.Layers.LayerExists("Hand")
+				? LayerMask.NameToLayer("Hand")
+				: bodyLayer;
+
+			var animator  = descriptor.Animator;
+			var leftHand  = animator ? animator.GetBoneTransform(HumanBodyBones.LeftHand)  : null;
+			var rightHand = animator ? animator.GetBoneTransform(HumanBodyBones.RightHand) : null;
+
+			foreach (var collider in anchor.GetComponentsInChildren<Collider>(true)) {
+				if (!collider)
+					continue;
+
+				var t = collider.transform;
+
+				// Ne pas toucher à la layer d'un objet qui porte aussi un renderer : elle sert au culling
+				// des caméras. Les colliders de l'avatar sont sur les bones (mains/doigts), sans renderer.
+				if (t.GetComponent<Renderer>())
+					continue;
+
+				var isHand = (leftHand  && (t == leftHand  || t.IsChildOf(leftHand)))
+				          || (rightHand && (t == rightHand || t.IsChildOf(rightHand)));
+
+				t.gameObject.layer = isHand ? handLayer : bodyLayer;
+			}
 		}
 	}
 }
