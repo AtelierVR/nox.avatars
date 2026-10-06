@@ -44,8 +44,22 @@ flattened into individual `.anim` assets.
 
 ## Other files in this folder
 
-- `Calibration.controller` — the `Calibration` playable layer: a single `T-Pose` state whose motion is
-  `standards/Armature_A_TPose.anim`. Used by the `Calibration` playable layer
-  (see `Nox.CCK.Avatars.StateMachines.PlayableLayerControl`).
+- `Pose.controller` — the standard `Pose` playable layer: an integer parameter `Pose` selects a
+  whole-body pose (`0` normal, `1` presentation, `2` calibration, `3` sitting — see
+  `Nox.Avatars.StateMachines.AvatarPose`) and each state declares what it does to the avatar with the
+  state behaviours `TrackingControl` (cut/restore the IK per limb) and `PlayableLayerControl`
+  (stop/resume another layer):
+
+  | Value | State | Motion | Behaviour |
+  |---|---|---|---|
+  | 0 | `Normal` | none, *Write Defaults off* (the layer writes nothing, the avatar is fully driven by the player) | `TrackingControl` → Head/hands/feet in **Tracking** |
+  | 1 | `Presentation` | `standards/Armature_Idle_Talking_Loop.anim` | `TrackingControl` → all in **Animation** |
+  | 2 | `Calibration` | `standards/Armature_A_TPose.anim` | `TrackingControl` → all in **Animation**, `PlayableLayerControl` → stops `Locomotion` on enter, starts it on exit |
+  | 3 | `Sitting` | `standards/Armature_Sitting_Idle_Loop.anim` | `TrackingControl` → hips/feet in **Animation** |
+
+  Because the `Normal` state writes nothing, the layer can stay enabled at full weight and the game
+  only has to write the integer: this is how a full-body calibration puts the avatar in its reference
+  pose (`Nox.XR.Runtime.FullBody.FullBodyCalibration` asks for value `2`). Add it to the avatar's
+  `PlayableAvatarModule` (as a `Pose`-named layer) and nothing else is needed on the avatar side.
 - `Core.anim`, `Pulse.anim`, `Default.controller`, `Locomotion.controller`, `ErrorFX.controller` —
   the original Nox avatar playable-layer assets.
