@@ -120,11 +120,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b47d7cacef594821aa2840e150c8a5f5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  target: 0
+  targetPlatforms: []
   publishId: 0
   publishServer: 
   publishVersion: 0
   isCompiled: 0
+  detected:
+  - {fileID: 1762456259308906891}
+  - {fileID: 6409564384203862669}
 --- !u!114 &1762456259308906891
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -138,8 +141,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   controllers:
-  - {fileID: 9100000, guid: bbc0e0328293bf5439bbed3b1250c4f8, type: 2}
-  - {fileID: 9100000, guid: 2b8644282ec51ae43979e5c7cd7ea4c3, type: 2}
+  - controller: {fileID: 9100000, guid: bbc0e0328293bf5439bbed3b1250c4f8, type: 2}
+    naming: 2
+    custom: 
+  - controller: {fileID: 9100000, guid: 3d9c4f1a6b2e47d8a5c0b1e2f3a4d5c6, type: 2}
+    naming: 4
+    custom: 
 --- !u!114 &6409564384203862669
 MonoBehaviour:
   m_ObjectHideFlags: 0
