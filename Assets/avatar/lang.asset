@@ -97,6 +97,10 @@ MonoBehaviour:
       value: "{0} child avatars detected. Child avatars are not supported and will be removed during the build process."
     - key: avatar.editor.notification.children_avatars.action.select_children
       value: "Select Child Avatars"
+    - key: avatar.editor.notification.cameras
+      value: "This avatar contains {0} camera(s). At runtime they are disabled and will not render to the XR eyes nor to the desktop screen."
+    - key: avatar.editor.notification.cameras.action.untag
+      value: "Untag Cameras"
     - key: avatar.editor.notification.no_avatar_descriptor.selected
       value: "No AvatarDescriptor found. Please add an AvatarDescriptor."
     - key: avatar.editor.notification.no_avatar_descriptor.found

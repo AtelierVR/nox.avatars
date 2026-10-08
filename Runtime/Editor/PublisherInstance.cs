@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Cysharp.Threading.Tasks;
 using Nox.Avatars.Editor;
 using Nox.CCK.Avatars;
@@ -73,6 +72,9 @@ namespace Nox.Avatars.Runtime.Editor {
 		private VisualElement _noDescriptorContainer;
 		private VisualElement _loadingContainer;
 
+		// UI Elements - Notification summary
+		private VisualElement _notificationSummary;
+
 		private Texture2D _currentThumbnailTexture;
 
 		public PublisherInstance(PublisherPanel panel, IWindow window, Dictionary<string, object> data) {
@@ -102,6 +104,7 @@ namespace Nox.Avatars.Runtime.Editor {
 
 		public void OnDestroy() {
 			AvatarDescriptorHelper.OnAvatarSelected.RemoveListener(OnAvatarSelected);
+			AvatarNotificationHelper.OnNotificationsChanged.RemoveListener(OnNotificationsChanged);
 			_panel.Instance = null;
 		}
 
@@ -122,6 +125,8 @@ namespace Nox.Avatars.Runtime.Editor {
 
 			AvatarDescriptorHelper.OnAvatarSelected.AddListener(OnAvatarSelected);
 			OnAvatarSelected(AvatarDescriptorHelper.CurrentAvatar);
+			AvatarNotificationHelper.OnNotificationsChanged.AddListener(OnNotificationsChanged);
+			OnNotificationsChanged(AvatarNotificationHelper.Notifications.ToArray());
 			CheckLoginStatus().Forget();
 
 			return _content = root;
@@ -181,6 +186,48 @@ namespace Nox.Avatars.Runtime.Editor {
 			_notLoggedContainer = root.Q<VisualElement>("not-logged");
 			_noDescriptorContainer = root.Q<VisualElement>("no-descriptor");
 			_loadingContainer = root.Q<VisualElement>("loading");
+
+			// Notification summary
+			_notificationSummary = root.Q<VisualElement>("notification-summary");
+		}
+
+		private void OnNotificationsChanged(AvatarNotification[] notifications) {
+			if (_notificationSummary == null)
+				return;
+
+			_notificationSummary.Clear();
+
+			var counts = new Dictionary<NotificationType, int>();
+			foreach (var notification in notifications) {
+				counts.TryGetValue(notification.Type, out var current);
+				counts[notification.Type] = current + 1;
+			}
+
+			// Du plus critique au moins critique.
+			AddSummaryItem(NotificationType.Error, "error");
+			AddSummaryItem(NotificationType.Warning, "warning");
+			AddSummaryItem(NotificationType.Info, "info");
+			AddSummaryItem(NotificationType.Success, "success");
+
+			_notificationSummary.style.display = _notificationSummary.childCount > 0
+				? DisplayStyle.Flex
+				: DisplayStyle.None;
+
+			void AddSummaryItem(NotificationType type, string cssClass) {
+				if (!counts.TryGetValue(type, out var count) || count <= 0)
+					return;
+
+				var item = new VisualElement();
+				item.AddToClassList("summary-item");
+				item.AddToClassList(cssClass);
+
+				var icon = new VisualElement();
+				icon.AddToClassList("icon");
+
+				item.Add(icon);
+				item.Add(new Label(count.ToString()));
+				_notificationSummary.Add(item);
+			}
 		}
 
 		private void SetupEventHandlers() {
