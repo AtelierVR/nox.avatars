@@ -15,9 +15,12 @@ using UnityEngine.UI;
 namespace Nox.Avatars.Runtime.client {
 
 	public class AvatarComponent : MonoBehaviour {
-		public GameObject withThumbnail;
-		public GameObject withoutThumbnail;
-		public Image thumbnail;
+		public GameObject        withThumbnail;
+		public GameObject        withoutThumbnail;
+		public GameObject        withBanner;
+		public GameObject        withoutBanner;
+		public Image             banner;
+		public AspectRatioFitter bannerAspect;
 		public TextLanguage title;
 		public TextLanguage identifier;
 		public TextLanguage label;
@@ -106,9 +109,12 @@ namespace Nox.Avatars.Runtime.client {
 			title.UpdateText("avatar.error");
 			identifier.UpdateText("avatar.error");
 			label.UpdateText("avatar.error");
-			thumbnail.sprite = null;
+			banner.sprite = null;
+			banner.GetOrAddComponent<NetworkImage>().Url = null;
 			withThumbnail.SetActive(false);
-			withoutThumbnail.SetActive(true);
+			withoutThumbnail.SetActive(false);
+			withBanner.SetActive(false);
+			withoutBanner.SetActive(true);
 			descriptionContainer.SetActive(false);
 		}
 
@@ -116,9 +122,12 @@ namespace Nox.Avatars.Runtime.client {
 			title.UpdateText("avatar.loading");
 			identifier.UpdateText("avatar.loading");
 			label.UpdateText("avatar.loading");
-			thumbnail.sprite = null;
+			banner.sprite = null;
+			banner.GetOrAddComponent<NetworkImage>().Url = null;
 			withThumbnail.SetActive(false);
-			withoutThumbnail.SetActive(true);
+			withoutThumbnail.SetActive(false);
+			withBanner.SetActive(false);
+			withoutBanner.SetActive(true);
 			descriptionContainer.SetActive(false);
 		}
 
@@ -139,7 +148,9 @@ namespace Nox.Avatars.Runtime.client {
 			} else
 				descriptionContainer.SetActive(false);
 
-			UpdateThumbnail(avatar);
+			withThumbnail.SetActive(false);
+			withoutThumbnail.SetActive(false);
+			UpdateBanner(avatar);
 			UpdateFavoriteState().Forget();
 
 			HoverCache(_isCachedHover);
@@ -147,22 +158,22 @@ namespace Nox.Avatars.Runtime.client {
 			UpdateSelectButton();
 		}
 
-		private void UpdateThumbnail(IAvatar avatar) {
-			var url = avatar?.BestImage(1f)?.Url;   // square card slot
+		private void UpdateBanner(IAvatar avatar) {
+			_networkImage = banner.GetOrAddComponent<NetworkImage>();
 
+			var url = avatar?.BestImage(1f)?.Url;   // square card slot
 			if (string.IsNullOrEmpty(url)) {
-				thumbnail.sprite = null;
-				withThumbnail.SetActive(false);
-				withoutThumbnail.SetActive(true);
+				banner.sprite = null;
+				_networkImage.Url = null;
+				withBanner.SetActive(false);
+				withoutBanner.SetActive(false);
 				return;
 			}
 
-			// Ensure NetworkImage exists on the thumbnail GameObject
-			_networkImage = thumbnail.GetOrAddComponent<NetworkImage>();
-
+			// Set the URL before activating so the NetworkImage starts loading on the first display.
 			_networkImage.Url = url;
-			withThumbnail.SetActive(true);
-			withoutThumbnail.SetActive(false);
+			withoutBanner.SetActive(false);
+			withBanner.SetActive(true);
 		}
 
 
@@ -297,11 +308,34 @@ namespace Nox.Avatars.Runtime.client {
 			var profile = Client.GetAsset<GameObject>("ui:prefabs/profile.prefab")
 				.Instantiate(Reference.GetComponent<RectTransform>("content", container));
 
-			component.identifier       = Reference.GetComponent<TextLanguage>("identifier", profile);
-			component.title            = Reference.GetComponent<TextLanguage>("title", profile);
-			component.thumbnail        = Reference.GetComponent<Image>("thumbnail", profile);
+			component.identifier    = Reference.GetComponent<TextLanguage>("identifier", profile);
+			component.title         = Reference.GetComponent<TextLanguage>("title", profile);
+			component.banner        = Reference.GetComponent<Image>("banner", profile);
+			component.bannerAspect  = Reference.GetComponent<AspectRatioFitter>("banner_aspect", profile);
+			component.withBanner    = Reference.GetReference("with_banner", profile);
+			component.withoutBanner = Reference.GetReference("without_banner", profile);
+
+			// Keep the banner aspect ratio in sync with the loaded texture.
+			var bannerNetworkImage = component.banner.GetOrAddComponent<NetworkImage>();
+			bannerNetworkImage.OnSuccess.AddListener(texture => {
+				if (texture.height > 0) {
+					component.bannerAspect.aspectRatio = (float)texture.width / texture.height;
+					component.withBanner.SetActive(true);
+					component.withoutBanner.SetActive(false);
+				}
+			});
+			bannerNetworkImage.OnError.AddListener(_ => {
+				// An empty URL means "no banner": keep the loading skeleton as-is.
+				if (string.IsNullOrEmpty(bannerNetworkImage.Url)) return;
+				component.withBanner.SetActive(false);
+				component.withoutBanner.SetActive(true);
+			});
+
+			// This page uses the banner as its main image: keep the profile thumbnail (avatar) hidden.
 			component.withThumbnail    = Reference.GetReference("with_thumbnail", profile);
 			component.withoutThumbnail = Reference.GetReference("without_thumbnail", profile);
+			component.withThumbnail.SetActive(false);
+			component.withoutThumbnail.SetActive(false);
 
 			// generate dashboard
 			container = Client.GetAsset<GameObject>("ui:prefabs/container_full.prefab")
