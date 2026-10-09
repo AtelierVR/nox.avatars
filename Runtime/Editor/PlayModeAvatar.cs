@@ -12,7 +12,7 @@ namespace Nox.Avatars.Runtime.Editor {
 	[RequireComponent(typeof(IAvatarDescriptor))]
 	public class PlayModeAvatar : MonoBehaviour, IRuntimeAvatar, IRemoveOnBuild {
 		public string Id
-			=> GetEntityId().GetHashCode().ToString();
+			=> this.GetId().ToString();
 
 		public Dictionary<string, object> Arguments
 			=> new() {

@@ -45,7 +45,7 @@ namespace Nox.Avatars.Runtime {
 					return null;
 				}
 
-				avatar.Id         = avatar.Root.GetEntityId().GetHashCode().ToString();
+				avatar.Id         = avatar.Root.GetId().ToString();
 				avatar.Root.name  = $"[{avatar.GetType().Name}_{avatar.Id}]";
 				avatar.Descriptor = avatar.Root.GetComponent<IAvatarDescriptor>();
 
