@@ -122,7 +122,7 @@ namespace Nox.Avatars.Runtime
         public void OnDisposeMain()
         {
             foreach (var setting in _settings)
-                SettingAPI?.Remove(setting.GetPath());
+                SettingAPI?.Remove(setting.Path);
             _settings = Array.Empty<SettingsHandler>();
 
             AvatarSetup.OnCheckRequest = null;

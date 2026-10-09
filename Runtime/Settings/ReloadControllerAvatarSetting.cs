@@ -2,15 +2,14 @@ using Cysharp.Threading.Tasks;
 using Nox.Avatars.Controllers;
 using Nox.CCK.Settings;
 using Nox.Settings;
-using Nox.UI;
 using UnityEngine;
 
 namespace Nox.Avatars.Runtime.Settings {
 	public sealed class ReloadControllerAvatarSetting : ButtonHandler {
-		public override string[] GetPath()
+		public override string[] Path
 			=> new[] { "avatar", "general", "reload_avatar" };
 
-		public override int GetOrder() => 1;
+		public override int Order => 50001;
 
 		public override void OnUpdated(IHandler handler)
 			=> RefreshInteractable();

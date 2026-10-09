@@ -9,10 +9,10 @@ namespace Nox.Avatars.Runtime.Settings {
 		private const int MinValue = 1;
 		private const int MaxValue = 16;
 
-		public override string[] GetPath()
+		public override string[] Path
 			=> new[] { "avatar", "general", "queue" };
 
-		public override int GetOrder() => 0;
+		public override int Order => 50000;
 
 		public AvatarQueueSizeSetting() {
 			SetRange(MinValue, MaxValue);
