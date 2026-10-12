@@ -201,7 +201,7 @@ namespace Nox.Avatars.Runtime.Network {
 
 			var release = version == AvatarIdentifierExtensions.DefaultVersion
 				? await assets.FetchPreferredRelease(address, Endpoint, id, cancellationToken)
-				: await assets.FetchRelease(address, Endpoint, id, version.ToString(), true, cancellationToken);
+				: await assets.FetchRelease(address, Endpoint, id, version.ToString(), false, cancellationToken);
 
 			if (release == null)
 				Logger.LogWarning($"No release found for avatar {ide} (version {version}).");
@@ -211,19 +211,35 @@ namespace Nox.Avatars.Runtime.Network {
 
 		/// <summary>
 		/// Bundle an avatar is loaded from: the file of its release that matches the current platform
-		/// and engine, or <c>null</c> when the avatar has no compatible variant.
+		/// and engine, or <c>null</c> when the avatar has no compatible variant. The files live on
+		/// their own route (a release never embeds them), so they are listed for the resolved release.
 		/// </summary>
 		public async UniTask<IAssetFile> ResolveBundle(Identifier ide, CancellationToken cancellationToken = default) {
+			var (id, address) = Optimize(ide);
+			if (address == Identifier.LOCAL_SERVER) {
+				Logger.LogError($"Cannot resolve the bundle of avatar {ide} from {address}");
+				return null;
+			}
+
+			var assets = Assets;
+
+			if (assets == null) {
+				Logger.LogError("Cannot resolve the avatar bundle: the asset pipeline is not available.");
+				return null;
+			}
+
 			var release = await ResolveRelease(ide, cancellationToken);
 
 			if (release == null)
 				return null;
 
-			var file = release.BestFile(PlatformExtensions.CurrentPlatform, EngineExtensions.CurrentEngine);
+			var releaseRef = string.IsNullOrEmpty(release.Name) ? release.Id.ToString() : release.Name;
+			var files      = await assets.FetchFiles(address, Endpoint, id, releaseRef, cancellationToken);
+			var file       = files.BestFile(PlatformExtensions.CurrentPlatform, EngineExtensions.CurrentEngine);
 
 			if (file == null)
 				Logger.LogError(
-					$"No compatible bundle for avatar {ide}: release {release.Name ?? release.Id.ToString()} has no file for "
+					$"No compatible bundle for avatar {ide}: release {releaseRef} has no file for "
 					+ $"{PlatformExtensions.CurrentPlatform.GetPlatformName()} on {EngineExtensions.CurrentEngine.GetEngineName()}."
 				);
 

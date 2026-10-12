@@ -110,7 +110,7 @@ namespace Nox.Avatars.Pipeline {
 
 			try {
 				var targets = NormalizeTargets(data?.Descriptor ? data.Descriptor.Targets : null);
-				// Le bundle est nommé d'après l'avatar (GameObject racine) et non d'après la scène
+				// The bundle is named after the avatar (root GameObject), not after the scene
 				var avatarName = data?.Descriptor ? data.Descriptor.gameObject.name : null;
 
 				if (string.IsNullOrEmpty(data.TempPath))
@@ -119,10 +119,14 @@ namespace Nox.Avatars.Pipeline {
 				data.ProgressCallback?.Invoke(0.05f, "Validating build prerequisites...");
 				await UniTask.Yield();
 
-				// Validation des prérequis
+				// Validating the prerequisites
 				var validation = ValidateBuildPrerequisites(data);
 				if (validation.Type != BuildResultType.Success)
 					return Finish(validation);
+
+				// A bundle build can switch Unity's active platform (legacy API): capture it here so it can
+				// be restored once EVERY target has been built.
+				var previousPlatform = PlatformExtensions.CurrentPlatform;
 
 				IsBuilding = true;
 				var rollback = EditorSceneManager.GetSceneManagerSetup();
@@ -132,14 +136,14 @@ namespace Nox.Avatars.Pipeline {
 					data.ProgressCallback?.Invoke(0.10f, "Preparing temporary directories...");
 					await UniTask.Yield();
 
-					// Préparation des répertoires temporaires
+					// Preparing the temporary directories
 					var preparation = PrepareTemporaryDirectories(data);
 					if (preparation.Type != BuildResultType.Success) {
 						EditorSceneManager.RestoreSceneManagerSetup(rollback);
 						return Finish(preparation);
 					}
 
-					// Sauvegarde initiale des scènes
+					// Initial save of the scenes
 					if (!EditorSceneManager.SaveOpenScenes()) {
 						EditorSceneManager.RestoreSceneManagerSetup(rollback);
 						return Finish(
@@ -156,7 +160,7 @@ namespace Nox.Avatars.Pipeline {
 					data.ProgressCallback?.Invoke(0.40f, "Compiling scripts...");
 					await UniTask.Yield();
 
-					// Compilation des scripts
+					// Compiling the scripts
 					var compilation = await CompileScripts(data.Descriptor.gameObject);
 					if (compilation.Type != BuildResultType.Success) {
 						EditorSceneManager.RestoreSceneManagerSetup(rollback);
@@ -173,7 +177,7 @@ namespace Nox.Avatars.Pipeline {
 						return Finish(processing);
 					}
 
-					// Un AssetBundle par plateforme ciblée
+					// One AssetBundle per target platform
 					var outputs = new List<BuildOutput>();
 					foreach (var platform in targets) {
 						data.Target   = platform;
@@ -222,6 +226,10 @@ namespace Nox.Avatars.Pipeline {
 				finally {
 					// Cleanup state
 					IsBuilding = false;
+
+					// Nothing should leave the editor on a target platform (e.g. Linux) after a build started
+					// from Windows: switch back to the previous one, once all targets are done.
+					RestorePlatform(previousPlatform);
 				}
 			} catch (Exception e) {
 				Logger.LogError(new Exception("Build failed with exception", e));
@@ -232,6 +240,18 @@ namespace Nox.Avatars.Pipeline {
 					}
 				);
 			}
+		}
+
+		/// <summary>
+		/// Restores Unity's active platform to <paramref name="platform"/> when a build switched it.
+		/// No-op when it is already set: avoids a needless domain reload.
+		/// </summary>
+		private static void RestorePlatform(Platform platform) {
+			if (PlatformExtensions.CurrentPlatform == platform)
+				return;
+
+			Logger.Log($"Restoring the active build target to {platform}...");
+			PlatformExtensions.CurrentPlatform = platform;
 		}
 
 		/// <summary>
@@ -399,7 +419,7 @@ namespace Nox.Avatars.Pipeline {
 				if (!avatarGameObject.activeInHierarchy)
 					Logger.LogWarning("Avatar GameObject is not active in hierarchy. This might cause prefab creation to fail.");
 
-				// Nettoyage complet des composants manquants AVANT de vérifier les problèmes
+				// Full cleanup of the missing components BEFORE checking for problems
 				Logger.Log("Cleaning up missing components from Avatar GameObject and its children...");
 				CleanupMissingComponents(avatarGameObject);
 
@@ -447,7 +467,7 @@ namespace Nox.Avatars.Pipeline {
 				// Final cleanup of any remaining null components
 				CleanupNullComponents(avatarGameObject);
 
-				// Créer le prefab d'abord
+				// Create the prefab first
 				var prefab = PrefabUtility.SaveAsPrefabAsset(avatarGameObject, prefabPath);
 				if (!prefab)
 					return new BuildResult {
@@ -457,7 +477,7 @@ namespace Nox.Avatars.Pipeline {
 
 				Logger.Log($"Successfully created avatar prefab at: {prefabPath}");
 
-				// Rafraîchir pour que Unity reconnaisse le nouveau prefab
+				// Refresh so Unity picks up the new prefab
 				AssetDatabase.Refresh();
 				await UniTask.Yield();
 
@@ -840,8 +860,8 @@ namespace Nox.Avatars.Pipeline {
 
 
 		/// <summary>
-		/// Cibles du build : celles demandées, dédupliquées et dans l'ordre de
-		/// <see cref="PlatformExtensions.All"/>, avec repli sur la plateforme courante.
+		/// Targets to build: the requested ones, deduplicated and in the
+		/// <see cref="PlatformExtensions.All"/> order, falling back on the current platform.
 		/// </summary>
 		private static Platform[] NormalizeTargets(Platform[] requested) {
 			var targets = (requested ?? Array.Empty<Platform>())
@@ -876,8 +896,8 @@ namespace Nox.Avatars.Pipeline {
 				return "avatar";
 
 			var slug = name.Trim().ToLowerInvariant();
-			slug = Regex.Replace(slug, @"\s+", "-"); // Les espaces deviennent des tirets
-			slug = Regex.Replace(slug, @"[^a-z0-9\-_]", ""); // Retire les caractères invalides pour un nom de fichier
+			slug = Regex.Replace(slug, @"\s+", "-"); // Spaces become dashes
+			slug = Regex.Replace(slug, @"[^a-z0-9\-_]", ""); // Strip characters that are invalid in a file name
 			slug = Regex.Replace(slug, @"-{2,}", "-").Trim('-');
 
 			return string.IsNullOrEmpty(slug) ? "avatar" : slug;
