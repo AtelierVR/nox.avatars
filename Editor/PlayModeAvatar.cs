@@ -25,6 +25,11 @@ namespace Nox.Avatars.Editor {
 		public IAvatarDescriptor Descriptor
 			=> GetComponent<IAvatarDescriptor>();
 
+		private IAvatarModuleBus _bus;
+
+		public IAvatarModuleBus Bus
+			=> _bus ??= new AvatarModuleBus(this);
+
 		public Identifier Identifier { get; set; } = Identifier.Invalid;
 
 		public async UniTask Dispose()

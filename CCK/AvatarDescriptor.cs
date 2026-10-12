@@ -108,8 +108,8 @@ namespace Nox.CCK.Avatars {
 				// Inclut le GameObject du descripteur lui-même
 				modules.UnionWith(root.GetComponentsInChildren<IAvatarModule>(true));
 
-			// La liste sert de graine aux appels suivants : une référence détruite ne doit pas y rester
-			modules.RemoveWhere(module => module is UnityEngine.Object element && !element);
+			// The list seeds the next calls: a destroyed reference must not stay in it.
+			modules.RemoveWhere(module => module is UnityEngine.Object element && element.IsDestroyed());
 
 			#if UNITY_EDITOR
 			// L'inspecteur affiche un tableau sérialisé (Unity ne sérialise pas IAvatarModule[]) : on le tient

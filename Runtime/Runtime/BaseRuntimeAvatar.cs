@@ -7,11 +7,16 @@ namespace Nox.Avatars.Runtime {
 	public abstract class BaseRuntimeAvatar : IRuntimeAvatar {
 		protected GameObject Root;
 
+		private IAvatarModuleBus _bus;
+
 		public virtual string Id { get; internal set; } = null;
 
 		public Dictionary<string, object> Arguments { get; internal set; } = new();
 
 		public virtual IAvatarDescriptor Descriptor { get; internal set; }
+
+		public IAvatarModuleBus Bus
+			=> _bus ??= new AvatarModuleBus(this);
 
 		public Identifier Identifier { get; set; } = Identifier.Invalid;
 

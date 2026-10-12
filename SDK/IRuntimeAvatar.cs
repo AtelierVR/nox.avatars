@@ -23,6 +23,12 @@ namespace Nox.Avatars {
 		public IAvatarDescriptor Descriptor { get; }
 
 		/// <summary>
+		/// Bus every module of this avatar shares: a module sends an event on it and all the modules of the
+		/// avatar receive it (see <see cref="IAvatarModule.OnBusEvent"/>).
+		/// </summary>
+		public IAvatarModuleBus Bus { get; }
+
+		/// <summary>
 		/// Converts the avatar to its identifier representation.
 		/// </summary>
 		/// <returns></returns>

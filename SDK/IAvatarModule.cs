@@ -22,5 +22,14 @@ namespace Nox.Avatars {
 		/// <param name="token"></param>
 		/// <returns></returns>
 		public UniTask<bool> Setup(IRuntimeAvatar runtimeAvatar, AvatarModulePhase phase, CancellationToken token = default);
+
+		/// <summary>
+		/// Called when an event is sent on the avatar's module bus (see <see cref="IRuntimeAvatar.Bus"/>).
+		/// Sibling modules use it to react to each other's work without a direct reference; the default
+		/// implementation ignores every event.
+		/// </summary>
+		/// <param name="name">Name of the event, e.g. <c>"scale.change"</c>.</param>
+		/// <param name="context">Values carried by the event, may be <c>null</c> (see <see cref="IBusContext"/>).</param>
+		public void OnBusEvent(string name, IBusContext context = null) { }
 	}
 }
