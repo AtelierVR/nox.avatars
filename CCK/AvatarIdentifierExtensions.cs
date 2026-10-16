@@ -6,7 +6,7 @@ namespace Nox.CCK.Avatars {
 
 		public const string VersionQuery = "v";
 
-		public const ushort DefaultVersion = ushort.MaxValue;
+		public const ushort DefaultVersion = ushort.MinValue;
 
 		public static ushort GetVersion(this Identifier identifier)
 			=> identifier.IsValid()
