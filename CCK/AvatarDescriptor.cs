@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Nox.Avatars;
 using Nox.CCK.Build;
+using Nox.CCK.Events;
 using UnityEngine;
-using UnityEngine.Serialization;
 using Nox.CCK.Utils;
 
 namespace Nox.CCK.Avatars {
@@ -89,11 +89,71 @@ namespace Nox.CCK.Avatars {
 
 		public IAvatarModule[] Modules = Array.Empty<IAvatarModule>();
 
+		/// <summary>
+		/// Raised when a module joins the avatar.
+		/// <para>
+		/// The module set of an avatar changes at runtime: a module is added by a preparation step, a rig
+		/// module is injected by another one, a module is destroyed on a hot-swap. Consumers that need to
+		/// react (a controller binding itself to the rig, for instance) subscribe here instead of
+		/// polling the module list every frame.
+		/// </para>
+		/// </summary>
+		public NoxEvent<IAvatarModule> OnModuleRegistered { get; } = new();
+
+		/// <summary>Raised when a module leaves the avatar (destroyed or removed).</summary>
+		public NoxEvent<IAvatarModule> OnModuleUnregistered { get; } = new();
+
 		public T[] GetModules<T>() where T : IAvatarModule
 			=> Modules.OfType<T>().ToArray();
 
 		IAvatarModule[] IAvatarDescriptor.Modules
 			=> Modules;
+
+		/// <summary>
+		/// Refreshes the module list and raises the register/unregister events for the modules that
+		/// joined or left the avatar.
+		/// </summary>
+		public IAvatarModule[] RefreshModules() {
+			var previous = new HashSet<IAvatarModule>(Modules);
+			var current  = FindModules(this);
+
+			Modules = current;
+
+			var registered = new HashSet<IAvatarModule>();
+			var unregistered = new List<IAvatarModule>();
+
+			for (var i = 0; i < current.Length; i++) {
+				var module = current[i];
+				if (module == null)
+					continue;
+
+				if (previous.Contains(module))
+					continue;
+
+				registered.Add(module);
+			}
+
+			foreach (var module in previous) {
+				if (module == null)
+					continue;
+
+				if (registered.Contains(module))
+					continue;
+
+				if (current.Contains(module))
+					continue;
+
+				unregistered.Add(module);
+			}
+
+			foreach (var module in unregistered)
+				OnModuleUnregistered.Invoke(module);
+
+			foreach (var module in registered)
+				OnModuleRegistered.Invoke(module);
+
+			return current;
+		}
 
 		/// <summary>
 		/// Modules de l'avatar : ceux du descriptor et de son sous-arbre. Contrairement aux worlds, la
@@ -125,10 +185,6 @@ namespace Nox.CCK.Avatars {
 
 			return modules.ToArray();
 		}
-
-		// ReSharper disable Unity.PerformanceAnalysis
-		public IAvatarModule[] RefreshModules()
-			=> Modules = FindModules(this);
 
 		#endregion Modules
 	}

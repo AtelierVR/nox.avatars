@@ -1,4 +1,5 @@
 using UnityEngine;
+using Nox.CCK.Events;
 
 namespace Nox.Avatars {
 	public interface IAvatarDescriptor {
@@ -22,6 +23,16 @@ namespace Nox.Avatars {
 		/// </summary>
 		/// <returns></returns>
 		public IAvatarModule[] Modules { get; }
+
+		/// <summary>
+		/// Raised when a module joins the avatar (<see cref="IAvatarModule"/>).
+		/// </summary>
+		public NoxEvent<IAvatarModule> OnModuleRegistered { get; }
+
+		/// <summary>
+		/// Raised when a module leaves the avatar (destroyed, disabled or removed).
+		/// </summary>
+		public NoxEvent<IAvatarModule> OnModuleUnregistered { get; }
 
 		/// <summary>
 		/// Updates all avatar modules.
