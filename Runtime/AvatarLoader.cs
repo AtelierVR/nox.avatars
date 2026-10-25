@@ -55,7 +55,7 @@ namespace Nox.Avatars.Runtime
         }
 
         [NoxPublic(NoxAccess.Method)]
-        public static async UniTask<AssetBundleRuntimeAvatar> LoadFromCache(string hash, Dictionary<string, object> arguments = null, Action<float> progress = null, CancellationToken token = default)
+        public static async UniTask<IRuntimeAvatar> LoadFromCache(string hash, Dictionary<string, object> arguments = null, Action<float> progress = null, CancellationToken token = default)
         {
             Logger.Log($"Loading avatar from cache: {hash}");
 
@@ -74,7 +74,7 @@ namespace Nox.Avatars.Runtime
         }
 
         [NoxPublic(NoxAccess.Method)]
-        public static async UniTask<AssetBundleRuntimeAvatar> LoadFromPath(string path, Dictionary<string, object> arguments = null, Action<float> progress = null, CancellationToken token = default)
+        public static async UniTask<IRuntimeAvatar> LoadFromPath(string path, Dictionary<string, object> arguments = null, Action<float> progress = null, CancellationToken token = default)
         {
             await EnterLoadSlot(token);
             arguments ??= new Dictionary<string, object>();
@@ -84,14 +84,20 @@ namespace Nox.Avatars.Runtime
                 Logger.Log($"Loading avatar from path: {path} (Queue: {_currentLoadingCount}/{AvatarQueueSizeSetting.Value})");
 
                 var avatar = await AssetBundleRuntimeAvatar.Load(path, arguments, progress, token);
-                if (avatar == null)
-                {
-                    Logger.LogError($"Failed to load avatar from path: {path}");
-                    return null;
+                if (avatar != null) {
+                    InvokeAdded(avatar);
+                    return avatar;
                 }
 
-                InvokeAdded(avatar);
-                return avatar;
+                // The bundle has no Nox AvatarDescriptor: give external importers (VRChat, …) a chance.
+                var imported = await AvatarBundleImporters.TryLoad(path, arguments, progress, token);
+                if (imported != null) {
+                    InvokeAdded(imported);
+                    return imported;
+                }
+
+                Logger.LogError($"Failed to load avatar from path: {path}");
+                return null;
             }
             finally
             {
