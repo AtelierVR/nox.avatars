@@ -13,7 +13,7 @@
     "Nox.CCK.Avatars.EyeLooks",
     "Nox.CCK.Avatars.Rigging",
     "Nox.Avatars.Runtime.Modules",
-    "Nox.Network",
+    "Nox.Network", "Nox.Assets", "Nox.Assets.CCK",
     "Nox.Table",
     "Nox.Search",
     "Nox.CCK.Search",
@@ -31,6 +31,7 @@
     "Nox.CCK.Audio",
     "Nox.Avatars.Menus",
     "Nox.CCK.Users",
+    "Nox.Terminal",
     "Unity.TextMeshPro"
   ],
   "includePlatforms": [],

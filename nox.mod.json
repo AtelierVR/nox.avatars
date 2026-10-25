@@ -31,6 +31,12 @@
       "register": "git+https://github.com/AtelierVR/nox.network.git"
     },
     {
+      "id": "assets",
+      "type": "depends",
+      "version": ">=1.0.0",
+      "register": "git+https://github.com/AtelierVR/nox.assets.git"
+    },
+    {
       "id": "ui",
       "type": "depends",
       "version": ">=1.0.0",
@@ -83,9 +89,19 @@
       "type": "depends",
       "version": ">=1.0.0",
       "register": "git+https://github.com/AtelierVR/nox.audio.git"
+    },
+    {
+      "id": "terminal",
+      "type": "depends",
+      "version": ">=1.0.0",
+      "register": "git+https://github.com/AtelierVR/nox.terminal.git"
     }
   ],
   "constraints": [
+    {
+      "type": "after",
+      "id": "assets"
+    },
     {
       "type": "after",
       "id": "audio"
@@ -101,6 +117,10 @@
     {
       "type": "after",
       "id": "settings"
+    },
+    {
+      "type": "after",
+      "id": "terminal"
     }
   ],
   "entrypoints": {

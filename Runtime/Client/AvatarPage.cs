@@ -2,6 +2,7 @@ using System;
 using Cysharp.Threading.Tasks;
 using Nox.CCK.Avatars;
 using Nox.CCK.Mods.Events;
+using Nox.Assets;
 using Nox.CCK.Network.Assets;
 using Nox.CCK.Utils;
 using Nox.Network.Assets;
@@ -142,7 +143,7 @@ namespace Nox.Avatars.Runtime.client {
 			}
 
 			var cache = Main.Instance
-				.DownloadToCache(Asset.Url, Asset.CacheKey());
+				.DownloadToCache(new IdentifierCache(_identifier, Asset));
 
 			cache.Start().Forget();
 		}
@@ -163,9 +164,9 @@ namespace Nox.Avatars.Runtime.client {
 
 		public void OnOpen(IPage lastPage) {
 			_events = new[] {
-				Main.Instance.CoreAPI.EventAPI.Subscribe("avatar_cache_added", OnCacheUpdate),
-				Main.Instance.CoreAPI.EventAPI.Subscribe("avatar_cache_download", OnCacheUpdate),
-				Main.Instance.CoreAPI.EventAPI.Subscribe("avatar_cache_removed", OnCacheUpdate),
+			Main.Instance.CoreAPI.EventAPI.Subscribe("asset_cache_added", OnCacheUpdate),
+			Main.Instance.CoreAPI.EventAPI.Subscribe("asset_cache_download", OnCacheUpdate),
+			Main.Instance.CoreAPI.EventAPI.Subscribe("asset_cache_removed", OnCacheUpdate),
 				Main.Instance.CoreAPI.EventAPI.Subscribe("user_update", OnUserUpdate),
 				Main.Instance.CoreAPI.EventAPI.Subscribe("controller_avatar_changed", OnAvatarChanged),
 			};
@@ -197,17 +198,17 @@ namespace Nox.Avatars.Runtime.client {
 		public bool InCache()
 			=> Asset != null && Main.Instance.HasInCache(Asset.CacheKey());
 
-		private Caching.Cache GetDownload()
+		private ICaching GetDownload()
 			=> Asset != null
-				? Main.Instance.Cache.GetDownload(Asset.Url, Asset.CacheKey())
+				? Main.Instance.GetDownload(Asset.Url, Asset.CacheKey())
 				: null;
 
 		public (bool, float) IsDownloading() {
 			var cache = GetDownload();
 			if (cache == null)
 				return (false, 0f);
-			return cache.IsRunning()
-				? (true, cache.GetProgress())
+			return cache.IsRunning
+				? (true, cache.Progress)
 				: (false, 1f);
 		}
 	}

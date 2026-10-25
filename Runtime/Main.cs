@@ -4,11 +4,12 @@ using System.Threading;
 using Nox.Avatars.Runtime.Network;
 using Cysharp.Threading.Tasks;
 using Nox.Avatar;
-using Nox.Avatars.Runtime.Caching;
 using Nox.CCK.Avatars;
 using Nox.CCK.Language;
 using Nox.CCK.Mods.Cores;
 using Nox.CCK.Mods.Initializers;
+using Nox.Assets;
+using Nox.CCK.Network.Assets;
 using Nox.CCK.Utils;
 using Nox.Controllers;
 using Nox.Network;
@@ -20,6 +21,7 @@ using Nox.Users;
 using UnityEngine;
 using UnityEngine.Events;
 using Nox.Avatars.Runtime.Settings;
+using Nox.Avatars.Runtime.Commands;
 using SettingsHandler = Nox.Settings.IHandler;
 using Nox.CCK.Audio;
 using Logger = Nox.CCK.Utils.Logger;
@@ -31,10 +33,10 @@ namespace Nox.Avatars.Runtime
         public static Main Instance;
         public IMainModCoreAPI CoreAPI;
         public Network.Network Network;
-        internal CacheManager Cache;
         private Search.Search _search;
         private LanguagePack _lang;
         private SettingsHandler[] _settings = Array.Empty<SettingsHandler>();
+        private AvatarCommands _commands;
 
         public static INetworkAPI NetworkAPI
             => Instance.CoreAPI.ModAPI
@@ -46,8 +48,19 @@ namespace Nox.Avatars.Runtime
             => Instance == null
                 ? null
                 : Instance.CoreAPI.ModAPI
-                    .GetMod("network")
+                    .GetMod("assets")
                     ?.GetInstance<IAssetsAPI>();
+
+        /// <summary>
+        /// Shared asset cache. Owned by the <c>assets</c> mod so every asset kind (avatars, worlds,
+        /// mods…) uses the same files, progress and events.
+        /// </summary>
+        public static IAssetCacheAPI AssetsCache
+            => Instance == null
+                ? null
+                : Instance.CoreAPI.ModAPI
+                    .GetMod("assets")
+                    ?.GetInstance<IAssetCacheAPI>();
 
         static internal ISearchAPI SearchAPI
             => Instance.CoreAPI.ModAPI
@@ -92,7 +105,6 @@ namespace Nox.Avatars.Runtime
             AvatarSetup.OnCheckRequest = OnCheckRequest;
 
             Network = new Network.Network();
-            Cache = new CacheManager();
             _search = new Search.Search();
 
             // Register avatar volume channel, protected from removal.
@@ -105,6 +117,8 @@ namespace Nox.Avatars.Runtime
 
             foreach (var setting in _settings)
                 SettingAPI?.Add(setting);
+
+            _commands = new AvatarCommands();
         }
 
         private bool OnCheckRequest(IAvatarDescriptor descriptor)
@@ -121,6 +135,9 @@ namespace Nox.Avatars.Runtime
 
         public void OnDisposeMain()
         {
+            _commands?.Dispose();
+            _commands = null;
+
             foreach (var setting in _settings)
                 SettingAPI?.Remove(setting.Path);
             _settings = Array.Empty<SettingsHandler>();
@@ -129,8 +146,6 @@ namespace Nox.Avatars.Runtime
             LanguageManager.RemovePack(_lang);
             AvatarRegister?.Dispose();
             AvatarRegister = null;
-            Cache?.Dispose();
-            Cache = null;
             _search?.Dispose();
             _search = null;
             Network = null;
@@ -216,21 +231,21 @@ namespace Nox.Avatars.Runtime
         public async UniTask<bool> AddImage(Identifier identifier, Texture2D texture, Action<float> onProgress = null)
             => await Network.AddImage(identifier, texture, onProgress);
 
-        public ICaching DownloadToCache(string url, string hash = null, UnityAction<float> progress = null, CancellationToken token = default)
-        {
-            var caching = Cache.AddDownload(url, hash, token);
-            if (progress != null) caching.OnProgress.AddListener(progress);
-            return caching;
-        }
+        /// <summary>
+        /// Downloads a cache entry into the shared cache. A <see cref="IdentifierCache"/> entry carries
+        /// the bundle identity, so a file still being analyzed is waited for instead of failing.
+        /// </summary>
+        public ICaching DownloadToCache(ICacheEntry entry, UnityAction<float> progress = null, CancellationToken token = default)
+            => AssetsCache?.Download(entry, progress, token);
 
         public ICaching GetDownload(string url, string hash)
-            => Cache.GetDownload(url, hash);
+            => AssetsCache?.GetDownload(url, hash);
 
         public void RemoveFromCache(string hash)
-            => Cache.Clear(hash);
+            => AssetsCache?.Clear(hash);
 
         public bool HasInCache(string hash)
-            => Cache.Has(hash);
+            => AssetsCache?.Has(hash) == true;
 
         public async UniTask<IFavorites> AddFavorite(Identifier identifier)
             => await Network.AddFavorite(identifier);

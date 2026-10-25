@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Nox.Avatar;
+using Nox.Assets;
 using Nox.CCK.Utils;
 using Nox.Network.Assets;
 using UnityEngine;
@@ -90,7 +91,15 @@ namespace Nox.Avatars {
 
 		#region Caching
 
-		public ICaching DownloadToCache(string url, string hash = null, UnityAction<float> progress = null, CancellationToken token = default);
+		/// <summary>
+		/// Downloads a cache entry into the shared cache.
+		/// <para>
+		/// <see cref="IdentifierCache"/> describes the bundle of an avatar: the download then waits
+		/// while the file is still analyzed (<c>409 ANALYSIS_PENDING</c>) by refetching its status.
+		/// <see cref="UrlCache"/> is a raw URL, downloaded as-is.
+		/// </para>
+		/// </summary>
+		public ICaching DownloadToCache(ICacheEntry entry, UnityAction<float> progress = null, CancellationToken token = default);
 
 		public ICaching GetDownload(string url, string hash);
 
