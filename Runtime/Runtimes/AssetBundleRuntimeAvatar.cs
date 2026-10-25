@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Nox.AssetBundles;
@@ -48,9 +49,19 @@ namespace Nox.Avatars.Runtime {
 					Logger.LogWarning(new Exception($"Failed to warmup shader variant collections", ex));
 				}
 
-				// Load the avatar from the bundle (prefab)
+				// Load the avatar from the bundle (prefab). A Nox bundle exposes it as "Avatar";
+				// other builders (VRChat) use their own name, so fall back to the first prefab.
+				var assetNames = avatar.Bundle.AssetBundle.GetAllAssetNames();
+				var prefabName = assetNames.FirstOrDefault(name => name.Equals("Avatar", StringComparison.OrdinalIgnoreCase))
+				              ?? assetNames.FirstOrDefault(name => name.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase));
 
-				var assetRequest = avatar.Bundle.AssetBundle.LoadAssetAsync<GameObject>("Avatar");
+				if (string.IsNullOrEmpty(prefabName)) {
+					Logger.LogDebug($"No prefab found in avatar bundle: {path}");
+					await avatar.Dispose();
+					return null;
+				}
+
+				var assetRequest = avatar.Bundle.AssetBundle.LoadAssetAsync<GameObject>(prefabName);
 
 				// Yield périodique pendant le chargement pour ne pas bloquer
 				while (!assetRequest.isDone) {
@@ -64,7 +75,14 @@ namespace Nox.Avatars.Runtime {
 				var prefab = obj as GameObject;
 
 				if (!prefab) {
-					Logger.LogError($"No prefab found in avatar bundle: {path}");
+					Logger.LogDebug($"No prefab found in avatar bundle: {path}");
+					await avatar.Dispose();
+					return null;
+				}
+
+				// Not a Nox avatar: let an importer (VRChat, …) handle the bundle without instantiating it.
+				if (prefab.GetComponent<IAvatarDescriptor>() == null) {
+					Logger.LogDebug($"Bundle '{path}' has no Nox AvatarDescriptor, trying the registered importers.");
 					await avatar.Dispose();
 					return null;
 				}
@@ -87,7 +105,8 @@ namespace Nox.Avatars.Runtime {
 				avatar.Descriptor = avatar.Root.GetComponent<IAvatarDescriptor>();
 
 				if (avatar.Descriptor == null) {
-					Logger.LogError($"Avatar prefab does not have a valid descriptor: {path}");
+					// Not a Nox avatar: let an importer (VRChat, …) handle the bundle.
+					Logger.LogDebug($"Bundle '{path}' has no Nox AvatarDescriptor, trying the registered importers.");
 					await avatar.Dispose();
 					return null;
 				}
@@ -123,7 +142,9 @@ namespace Nox.Avatars.Runtime {
 		public override UniTask Dispose()
 		{
 			if (Root) {
-				Root.Destroy();
+				// Destroy immediately: the bundle is detached on the next line, and a deferred Destroy
+				// would leave the instance alive for one frame with its assets already unloaded.
+				Root.DestroyImmediate();
 				Root = null;
 			}
 

@@ -9,11 +9,11 @@ namespace Nox.Avatars.Runtime {
 
 		private IAvatarModuleBus _bus;
 
-		public virtual string Id { get; internal set; } = null;
+		public virtual string Id { get; protected internal set; } = null;
 
-		public Dictionary<string, object> Arguments { get; internal set; } = new();
+		public Dictionary<string, object> Arguments { get; protected internal set; } = new();
 
-		public virtual IAvatarDescriptor Descriptor { get; internal set; }
+		public virtual IAvatarDescriptor Descriptor { get; protected internal set; }
 
 		public IAvatarModuleBus Bus
 			=> _bus ??= new AvatarModuleBus(this);
