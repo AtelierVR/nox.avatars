@@ -1,3 +1,4 @@
+using Nox.Assets.Editor;
 using Nox.CCK.Avatars;
 using UnityEditor;
 using UnityEngine;
@@ -17,7 +18,7 @@ namespace Nox.Avatars.Editor {
 			=> OnAvatarSelected(AvatarDescriptorHelper.CurrentAvatar);
 
 		private static void OnAvatarSelected(AvatarDescriptor avatar) {
-			AvatarNotificationHelper.Remove(NotificationUid);
+			AssetNotificationHelper.Remove(NotificationUid);
 			if (!avatar) return;
 
 			var count = 0;
@@ -26,11 +27,11 @@ namespace Nox.Avatars.Editor {
 
 			if (count == 0) return;
 
-			AvatarNotificationHelper.Set(new AvatarNotification(
+			AssetNotificationHelper.Set(new AssetNotification(
 				NotificationUid,
-				NotificationType.Warning,
+				AssetNotificationType.Warning,
 				new[] { "avatar.editor.notification.missing_components", count.ToString() },
-				new AvatarAction[] {
+				new AssetNotificationAction[] {
 					new(
 						new[] { "avatar.editor.notification.missing_components.action.remove" },
 						() => {

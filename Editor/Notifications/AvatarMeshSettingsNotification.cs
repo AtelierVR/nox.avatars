@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Nox.Assets.Editor;
 using Nox.CCK.Avatars;
 using UnityEditor;
 using UnityEngine;
@@ -12,8 +13,8 @@ namespace Nox.Avatars.Editor {
 		}
 
 		private static void OnAvatarSelected(AvatarDescriptor avatar) {
-			AvatarNotificationHelper.Remove("mesh.rw.*");
-			AvatarNotificationHelper.Remove("mesh.lbsn.*");
+			AssetNotificationHelper.Remove("mesh.rw.*");
+			AssetNotificationHelper.Remove("mesh.lbsn.*");
 			if (!avatar) return;
 
 			var processed = new HashSet<string>();
@@ -40,11 +41,11 @@ namespace Nox.Avatars.Editor {
 			var meshName = mesh.name;
 
 			if (!importer.isReadable)
-				AvatarNotificationHelper.Set(new AvatarNotification(
+				AssetNotificationHelper.Set(new AssetNotification(
 					"mesh.rw." + guid,
-					NotificationType.Warning,
+					AssetNotificationType.Warning,
 					new[] { "avatar.editor.notification.mesh_rw", meshName },
-					new AvatarAction[] {
+					new AssetNotificationAction[] {
 						new(
 							new[] { "avatar.editor.notification.mesh_rw.action.fix" },
 							() => {
@@ -58,11 +59,11 @@ namespace Nox.Avatars.Editor {
 			var so       = new SerializedObject(importer);
 			var legacyProp = so.FindProperty("m_LegacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes");
 			if (legacyProp != null && !legacyProp.boolValue)
-				AvatarNotificationHelper.Set(new AvatarNotification(
+				AssetNotificationHelper.Set(new AssetNotification(
 					"mesh.lbsn." + guid,
-					NotificationType.Warning,
+					AssetNotificationType.Warning,
 					new[] { "avatar.editor.notification.mesh_lbsn", meshName },
-					new AvatarAction[] {
+					new AssetNotificationAction[] {
 						new(
 							new[] { "avatar.editor.notification.mesh_lbsn.action.fix" },
 							() => {

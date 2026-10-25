@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using Nox.Avatars.Parameters;
 using Nox.CCK.Avatars;
@@ -10,19 +11,23 @@ using UnityEngine.Animations.Rigging;
 using Logger = Nox.CCK.Utils.Logger;
 
 namespace Nox.Avatars.Editor {
-	[RequireComponent(typeof(IAvatarDescriptor))]
 	public class PlayModeAvatar : MonoBehaviour, IRuntimeAvatar, IRemoveOnBuild {
-		public string Id
+		public virtual string Id
 			=> this.GetId().ToString();
 
-		public Dictionary<string, object> Arguments
+		public virtual Dictionary<string, object> Arguments
 			=> new() {
 				["source"] = this,
 				["local"]  = true
 			};
 
 		// ReSharper disable Unity.PerformanceAnalysis
-		public IAvatarDescriptor Descriptor
+		/// <summary>
+		/// Descriptor of the avatar being played. A derived component may load the avatar from an
+		/// AssetBundle and return the descriptor of the loaded instance instead of its own
+		/// GameObject.
+		/// </summary>
+		public virtual IAvatarDescriptor Descriptor
 			=> GetComponent<IAvatarDescriptor>();
 
 		private IAvatarModuleBus _bus;
@@ -32,14 +37,29 @@ namespace Nox.Avatars.Editor {
 
 		public Identifier Identifier { get; set; } = Identifier.Invalid;
 
-		public async UniTask Dispose()
+		public virtual async UniTask Dispose()
 			=> await UniTask.Yield();
+
+		/// <summary>
+		/// Loads the avatar before it is prepared. The base implementation does nothing: the
+		/// descriptor is expected to be on this GameObject. A derived component can load an
+		/// AssetBundle here and expose the loaded descriptor through <see cref="Descriptor"/>.
+		/// </summary>
+		/// <returns><c>false</c> when the avatar could not be loaded.</returns>
+		protected virtual UniTask<bool> LoadAsync(CancellationToken token)
+			=> UniTask.FromResult(true);
 
 		private void Start()
 			=> StartAsync().Forget();
 
 		private async UniTask StartAsync() {
-			var descriptor = GetComponent<IAvatarDescriptor>();
+			if (!await LoadAsync(CancellationToken.None)) {
+				Logger.LogError("Avatar loading failed, destroying avatar.");
+				enabled = false;
+				return;
+			}
+
+			var descriptor = Descriptor;
 			if (descriptor == null) {
 				Logger.LogError("AvatarDescriptor component missing, destroying avatar.");
 				enabled = false;

@@ -1,3 +1,4 @@
+using Nox.Assets.Editor;
 using Nox.CCK.Avatars;
 using UnityEditor;
 using UnityEngine;
@@ -15,7 +16,7 @@ namespace Nox.Avatars.Editor {
 		private static void OnHierarchyChanged() {
 			var currentAvatar = AvatarDescriptorHelper.CurrentAvatar;
 			if (!currentAvatar) {
-				AvatarNotificationHelper.Remove(Uid);
+				AssetNotificationHelper.Remove(Uid);
 				return;
 			}
 
@@ -25,17 +26,17 @@ namespace Nox.Avatars.Editor {
 					childrenCount++;
 
 			if (childrenCount == 0) {
-				AvatarNotificationHelper.Remove(Uid);
+				AssetNotificationHelper.Remove(Uid);
 				return;
 			}
 
-			AvatarNotificationHelper.Set(
-				new AvatarNotification(
+			AssetNotificationHelper.Set(
+				new AssetNotification(
 					Uid,
-					NotificationType.Warning,
+					AssetNotificationType.Warning,
 					new[] { "avatar.editor.notification.children_avatars", childrenCount.ToString() },
 					new[] {
-						new AvatarAction(
+						new AssetNotificationAction(
 							new[] { "avatar.editor.notification.children_avatars.action.select_children" },
 							() => {
 								var c = AvatarDescriptorHelper.CurrentAvatar;

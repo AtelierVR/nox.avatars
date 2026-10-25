@@ -1,3 +1,4 @@
+using Nox.Assets.Editor;
 using UnityEditor;
 
 namespace Nox.Avatars.Editor {
@@ -9,17 +10,17 @@ namespace Nox.Avatars.Editor {
 			=> EditorApplication.playModeStateChanged += OnPlayMode;
 
 		private static void OnPlayMode(PlayModeStateChange state) {
-			if (state == PlayModeStateChange.ExitingEditMode && !AvatarNotificationHelper.Has(NotificationUid))
-				AvatarNotificationHelper.Add(
-					new AvatarNotification(
+			if (state == PlayModeStateChange.ExitingEditMode && !AssetNotificationHelper.Has(NotificationUid))
+				AssetNotificationHelper.Add(
+					new AssetNotification(
 						NotificationUid,
-						NotificationType.Error,
+						AssetNotificationType.Error,
 						new[] { "avatar.editor.notification.play_mode" }
 					)
 				);
 
 			if (state == PlayModeStateChange.EnteredEditMode)
-				AvatarNotificationHelper.Remove(NotificationUid);
+				AssetNotificationHelper.Remove(NotificationUid);
 		}
 	}
 }

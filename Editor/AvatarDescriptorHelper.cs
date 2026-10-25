@@ -48,6 +48,20 @@ namespace Nox.Avatars.Editor {
 			}
 		}
 
+                /// <summary>
+                /// Avatars that can be published (alive and active): the selector of the publisher
+                /// lists them.
+                /// </summary>
+                public static AvatarDescriptor[] Candidates() {
+                        try {
+                                return Object.FindObjectsByType<AvatarDescriptor>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+                                        .Where(avatar => avatar && avatar.gameObject.activeInHierarchy)
+                                        .ToArray();
+                        } catch {
+                                return System.Array.Empty<AvatarDescriptor>();
+                        }
+                }
+
 		/// <summary>
 		/// Re-résout l'avatar courant après une opération qui a pu recharger les scènes ou détruire le
 		/// descriptor (build, refresh) et prévient les listeners si nécessaire. Sans effet quand la
@@ -55,9 +69,6 @@ namespace Nox.Avatars.Editor {
 		/// </summary>
 		public static void Rebind() {
 			var previous = CurrentAvatar;
-
-			if (previous && previous.gameObject.activeInHierarchy)
-				return;
 
 			// Résolution complète : la référence courante ne peut plus servir
 			CurrentAvatar = null;

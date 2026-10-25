@@ -1,3 +1,4 @@
+using Nox.Assets.Editor;
 using Nox.CCK.Avatars;
 using UnityEditor;
 using UnityEngine;
@@ -18,26 +19,26 @@ namespace Nox.Avatars.Editor {
 			=> OnAvatarSelected(AvatarDescriptorHelper.CurrentAvatar);
 
 		private static void OnAvatarSelected(AvatarDescriptor avatar) {
-			AvatarNotificationHelper.Remove(NoAnimatorUid);
-			AvatarNotificationHelper.Remove(NotHumanoidUid);
+			AssetNotificationHelper.Remove(NoAnimatorUid);
+			AssetNotificationHelper.Remove(NotHumanoidUid);
 			if (!avatar) return;
 
 			var animator = avatar.GetComponent<Animator>();
 			if (!animator) {
-				AvatarNotificationHelper.Set(new AvatarNotification(
+				AssetNotificationHelper.Set(new AssetNotification(
 					NoAnimatorUid,
-					NotificationType.Error,
+					AssetNotificationType.Error,
 					new[] { "avatar.editor.notification.no_animator" }
 				));
 				return;
 			}
 
 			if (animator.avatar == null || !animator.avatar.isHuman)
-				AvatarNotificationHelper.Set(new AvatarNotification(
+				AssetNotificationHelper.Set(new AssetNotification(
 					NotHumanoidUid,
-					NotificationType.Warning,
+					AssetNotificationType.Warning,
 					new[] { "avatar.editor.notification.not_humanoid" },
-					new AvatarAction[] {
+					new AssetNotificationAction[] {
 						new(
 							new[] { "avatar.editor.notification.not_humanoid.action.select" },
 							() => {
