@@ -16,7 +16,7 @@ namespace Nox.Avatars.Runtime.Network {
 		public ISearchRequest Request;
 
 		[JsonProperty("items")]
-		public Avatar[] Items { get; private set; } = Array.Empty<Avatar>();
+		public AvatarAsset[] Items { get; private set; } = Array.Empty<AvatarAsset>();
 
 		[JsonProperty("total")]
 		public uint Total { get; private set; }
@@ -43,7 +43,7 @@ namespace Nox.Avatars.Runtime.Network {
 			=> await Previous();
 
 		/// <summary>Takes over the page returned by the asset pipeline.</summary>
-		public static SearchResponse From(AssetSearchResponse<Avatar> response)
+		public static SearchResponse From(AssetSearchResponse<AvatarAsset> response)
 			=> response == null
 				? null
 				: new SearchResponse {

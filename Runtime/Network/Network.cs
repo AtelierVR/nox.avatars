@@ -6,6 +6,7 @@ using Cysharp.Threading.Tasks;
 using Newtonsoft.Json;
 using Nox.CCK.Avatars;
 using Nox.CCK.Convertors;
+using Nox.CCK.Network;
 using Nox.CCK.Network.Assets;
 using Nox.CCK.Utils;
 using Nox.Network.Assets;
@@ -21,7 +22,7 @@ namespace Nox.Avatars.Runtime.Network {
 	/// </summary>
 	public class Network {
 		/// <summary>Invoked when an avatar is fetched from the server.</summary>
-		private readonly UnityEvent<Avatar> _fetchEvent = new();
+		private readonly UnityEvent<AvatarAsset> _fetchEvent = new();
 
 		/// <summary>The avatars collection served by the node.</summary>
 		public static AssetEndpoint Endpoint
@@ -31,7 +32,7 @@ namespace Nox.Avatars.Runtime.Network {
 		private static IAssetsAPI Assets
 			=> Main.AssetsAPI;
 
-		private void InvokeFetch(Avatar avatar) {
+		private void InvokeFetch(AvatarAsset avatar) {
 			if (avatar == null)
 				return;
 			_fetchEvent.Invoke(avatar);
@@ -55,7 +56,7 @@ namespace Nox.Avatars.Runtime.Network {
 				Limit  = data.Limit
 			};
 
-		public async UniTask<Avatar> Fetch(Identifier ide, CancellationToken cancellationToken = default) {
+		public async UniTask<AvatarAsset> Fetch(Identifier ide, CancellationToken cancellationToken = default) {
 			var (id, address) = Optimize(ide);
 			if (address == Identifier.LOCAL_SERVER) {
 				Logger.LogError($"Cannot fetch avatar {ide} from {address}");
@@ -69,7 +70,7 @@ namespace Nox.Avatars.Runtime.Network {
 				return null;
 			}
 
-			var avatar = await assets.Fetch<Avatar>(address, Endpoint, id, token: cancellationToken);
+			var avatar = await assets.Fetch<AvatarAsset>(address, Endpoint, id, token: cancellationToken);
 
 			if (avatar == null)
 				Logger.LogError($"Failed to fetch avatar {ide} from {address}");
@@ -92,7 +93,7 @@ namespace Nox.Avatars.Runtime.Network {
 				return null;
 			}
 
-			var response = await assets.Search<AssetSearchResponse<Avatar>>(
+			var response = await assets.Search<AssetSearchResponse<AvatarAsset>>(
 				address,
 				Endpoint,
 				ToAssetSearchRequest(data),
@@ -115,7 +116,7 @@ namespace Nox.Avatars.Runtime.Network {
 			return result;
 		}
 
-		public async UniTask<Avatar> Create(AvatarCreateRequest data, string server, CancellationToken cancellationToken = default) {
+		public async UniTask<AvatarAsset> Create(AvatarCreateRequest data, string server, CancellationToken cancellationToken = default) {
 			var address = server ?? Main.UserAPI?.Current?.Server;
 			if (string.IsNullOrEmpty(address)) {
 				Logger.LogError("Cannot create avatar: no server address provided.");
@@ -129,7 +130,7 @@ namespace Nox.Avatars.Runtime.Network {
 				return null;
 			}
 
-			var avatar = await assets.Create<Avatar>(address, Endpoint, data, cancellationToken);
+			var avatar = await assets.Create<AvatarAsset>(address, Endpoint, data, cancellationToken);
 
 			if (avatar == null)
 				Logger.LogError($"Failed to create avatar on {address}");
@@ -138,7 +139,7 @@ namespace Nox.Avatars.Runtime.Network {
 			return avatar;
 		}
 
-		public async UniTask<Avatar> Update(Identifier ide, AvatarUpdateRequest form, CancellationToken cancellationToken = default) {
+		public async UniTask<AvatarAsset> Update(Identifier ide, AvatarUpdateRequest form, CancellationToken cancellationToken = default) {
 			var (id, address) = Optimize(ide);
 			if (address == Identifier.LOCAL_SERVER) {
 				Logger.LogError($"Cannot update avatar {ide} from {address}");
@@ -152,7 +153,7 @@ namespace Nox.Avatars.Runtime.Network {
 				return null;
 			}
 
-			var avatar = await assets.Update<Avatar>(address, Endpoint, id, form, cancellationToken);
+			var avatar = await assets.Update<AvatarAsset>(address, Endpoint, id, form, cancellationToken);
 
 			if (avatar == null)
 				Logger.LogError($"Failed to update avatar {ide} from {address}");
@@ -237,13 +238,55 @@ namespace Nox.Avatars.Runtime.Network {
 			var files      = await assets.FetchFiles(address, Endpoint, id, releaseRef, cancellationToken);
 			var file       = files.BestFile(PlatformExtensions.CurrentPlatform, EngineExtensions.CurrentEngine);
 
-			if (file == null)
+			if (file == null) {
 				Logger.LogError(
 					$"No compatible bundle for avatar {ide}: release {releaseRef} has no file for "
 					+ $"{PlatformExtensions.CurrentPlatform.GetPlatformName()} on {EngineExtensions.CurrentEngine.GetEngineName()}."
 				);
+				return null;
+			}
 
 			return file;
+		}
+
+		/// <summary>
+		/// Polls the dedicated file status endpoint
+		/// (<c>GET …/releases/{release}/files/{fileRef}/status</c>, no bytes streamed) and returns
+		/// what a wait loop needs: the status and the <c>refetch_at</c> cadence.
+		/// <para>
+		/// The release is resolved again, so a caller only needs the identifier and the file it is
+		/// loading.
+		/// </para>
+		/// </summary>
+		/// <returns>The snapshot, or <c>null</c> when the status could not be read.</returns>
+		public async UniTask<IAssetStatusSnapshot> FetchStatus(Identifier ide, IAssetFile file, CancellationToken token = default) {
+			if (file == null)
+				return null;
+
+			var (id, address) = Optimize(ide);
+			var assets        = Assets;
+
+			if (assets == null) {
+				Logger.LogError("Cannot refetch the avatar bundle status: the asset pipeline is not available.");
+				return null;
+			}
+
+			var release = await ResolveRelease(ide, token);
+
+			if (release == null)
+				return null;
+
+			var releaseRef = string.IsNullOrEmpty(release.Name)
+				? release.Id.ToString()
+				: release.Name;
+			var reference  = file.Id > 0
+				? file.Id.ToString()
+				: file.Name;
+			var slot       = await assets.FetchFile(address, Endpoint, id, releaseRef, reference, token);
+
+			return slot != null 
+				? new AssetStatusSnapshot(slot.Status, slot.RefetchAt)
+				: null;
 		}
 
 		/// <summary>

@@ -6,7 +6,7 @@ using Nox.Search;
 
 namespace Nox.Avatars.Runtime.Search {
 	public class SearchData : IResultData {
-		public Network.Avatar Reference;
+		public Network.AvatarAsset Reference;
 
 		public int Id
 			=> Reference.Identifier.GetHashCode();

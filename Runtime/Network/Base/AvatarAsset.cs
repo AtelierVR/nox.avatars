@@ -5,11 +5,11 @@ using Nox.CCK.Utils;
 
 namespace Nox.Avatars.Runtime.Network {
 	/// <summary>
-	/// An avatar as returned by the avatars endpoint: the generic <see cref="Asset"/> narrowed to the
+	/// An avatar as returned by the avatars endpoint: the generic <see cref="BaseAsset"/> narrowed to the
 	/// <see cref="IAvatar"/> type. Avatars currently carry no field of their own.
 	/// </summary>
 	[Serializable, JsonObject]
-	public class Avatar : Asset, IAvatar, INoxObject {
+	public class AvatarAsset : BaseAsset, IAvatar, INoxObject {
 		/// <summary>Canonical reference of the avatar (<c>a:&lt;id&gt;@&lt;server&gt;</c>).</summary>
 		[JsonIgnore]
 		public override Identifier Identifier
