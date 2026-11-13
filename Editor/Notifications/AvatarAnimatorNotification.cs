@@ -8,6 +8,9 @@ namespace Nox.Avatars.Editor {
 		private const string NoAnimatorUid  = "no_animator";
 		private const string NotHumanoidUid = "not_humanoid";
 
+		/// <summary>Panel id of the avatar publisher/builder, so only those panels show these entries.</summary>
+		private const string Kind = "avatar";
+
 		[InitializeOnLoadMethod]
 		private static void OnInitialize() {
 			AvatarDescriptorHelper.OnAvatarSelected.AddListener(OnAvatarSelected);
@@ -28,7 +31,9 @@ namespace Nox.Avatars.Editor {
 				AssetNotificationHelper.Set(new AssetNotification(
 					NoAnimatorUid,
 					AssetNotificationType.Error,
-					new[] { "avatar.editor.notification.no_animator" }
+					new[] { "avatar.editor.notification.no_animator" },
+					null,
+					Kind
 				));
 				return;
 			}
@@ -46,7 +51,8 @@ namespace Nox.Avatars.Editor {
 								if (av) Selection.activeGameObject = av.gameObject;
 							}
 						)
-					}
+					},
+					Kind
 				));
 		}
 	}

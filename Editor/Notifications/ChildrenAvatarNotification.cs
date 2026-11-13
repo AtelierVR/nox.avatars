@@ -7,6 +7,9 @@ namespace Nox.Avatars.Editor {
 	public class ChildrenAvatarNotification {
 		public const string Uid = "children_avatars";
 
+		/// <summary>Panel id of the avatar publisher/builder, so only those panels show this entry.</summary>
+		private const string Kind = "avatar";
+
 		[InitializeOnLoadMethod]
 		private static void Initialize() {
 			EditorApplication.hierarchyChanged += OnHierarchyChanged;
@@ -52,7 +55,8 @@ namespace Nox.Avatars.Editor {
 								Selection.objects = childAvatars.ToArray();
 							}
 						)
-					}
+					},
+					Kind
 				)
 			);
 		}
