@@ -6,9 +6,11 @@ using Cysharp.Threading.Tasks;
 using Nox.AssetBundles;
 using Nox.CCK.AssetBundles;
 using Nox.CCK.Avatars;
+using Nox.CCK.Build;
 using Nox.CCK.Utils;
 using UnityEngine;
 using Logger = Nox.CCK.Utils.Logger;
+using Object = UnityEngine.Object;
 
 namespace Nox.Avatars.Runtime {
 	public class AssetBundleRuntimeAvatar : BaseRuntimeAvatar {
@@ -53,7 +55,7 @@ namespace Nox.Avatars.Runtime {
 				// other builders (VRChat) use their own name, so fall back to the first prefab.
 				var assetNames = avatar.Bundle.AssetBundle.GetAllAssetNames();
 				var prefabName = assetNames.FirstOrDefault(name => name.Equals("Avatar", StringComparison.OrdinalIgnoreCase))
-				              ?? assetNames.FirstOrDefault(name => name.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase));
+							  ?? assetNames.FirstOrDefault(name => name.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase));
 
 				if (string.IsNullOrEmpty(prefabName)) {
 					Logger.LogDebug($"No prefab found in avatar bundle: {path}");
@@ -80,7 +82,7 @@ namespace Nox.Avatars.Runtime {
 					return null;
 				}
 
-				// Not a Nox avatar: let an importer (VRChat, …) handle the bundle without instantiating it.
+				// Not a Nox avatar: let an importer (VRChat, ...) handle the bundle without instantiating it.
 				if (prefab.GetComponent<IAvatarDescriptor>() == null) {
 					Logger.LogDebug($"Bundle '{path}' has no Nox AvatarDescriptor, trying the registered importers.");
 					await avatar.Dispose();
@@ -105,11 +107,13 @@ namespace Nox.Avatars.Runtime {
 				avatar.Descriptor = avatar.Root.GetComponent<IAvatarDescriptor>();
 
 				if (avatar.Descriptor == null) {
-					// Not a Nox avatar: let an importer (VRChat, …) handle the bundle.
+					// Not a Nox avatar: let an importer (VRChat, ...) handle the bundle.
 					Logger.LogDebug($"Bundle '{path}' has no Nox AvatarDescriptor, trying the registered importers.");
 					await avatar.Dispose();
 					return null;
 				}
+
+				StripEditorOnlyComponents(avatar.Root);
 
 				var result = await AvatarSetup.Prepare(
 					avatar,
@@ -139,11 +143,8 @@ namespace Nox.Avatars.Runtime {
 			}
 		}
 
-		public override UniTask Dispose()
-		{
+		protected override UniTask OnDispose() {
 			if (Root) {
-				// Destroy immediately: the bundle is detached on the next line, and a deferred Destroy
-				// would leave the instance alive for one frame with its assets already unloaded.
 				Root.DestroyImmediate();
 				Root = null;
 			}
@@ -152,6 +153,27 @@ namespace Nox.Avatars.Runtime {
 			Bundle = null;
 
 			return UniTask.CompletedTask;
+		}
+		/// <summary>
+		/// Destroys the components of an instantiated avatar that must never run in game.
+		/// <para>
+		/// They are stripped from the prefab by the build pipeline; this covers the bundles built before it,
+		/// whose components are already published and cached. Their hook is build-time logic, so it is not
+		/// called here - the components are only removed before the avatar is activated.
+		/// </para>
+		/// </summary>
+		private static void StripEditorOnlyComponents(GameObject root) {
+			foreach (var script in root.GetComponentsInChildren<IRemoveOnBuild>(true)) {
+				if (script is not Object scriptObject)
+					continue;
+
+				Logger.LogWarning(
+					$"Removing {script.GetType().Name} from a shipped avatar: the bundle was built without stripping it, rebuild it.",
+					root
+				);
+
+				scriptObject.Destroy();
+			}
 		}
 	}
 }

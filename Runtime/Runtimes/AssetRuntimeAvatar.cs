@@ -84,7 +84,7 @@ namespace Nox.Avatars.Runtime {
 			}
 		}
 
-		public override async UniTask Dispose() {
+		protected override async UniTask OnDispose() {
 			await UniTask.Yield();
 
 			if (Root) {
