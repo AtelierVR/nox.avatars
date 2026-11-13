@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Cysharp.Threading.Tasks;
 using Nox.Assets.Editor;
 using Nox.Avatars.Editor;
@@ -23,6 +22,9 @@ namespace Nox.Avatars.Runtime.Editor {
 	/// flow, the images, the release and the uploads — comes from <c>nox.assets</c>.
 	/// </summary>
 	public sealed class AvatarPublisherSource : AssetPublisherSource {
+		/// <summary>Release picked in the panel, kept when the descriptor cannot be written.</summary>
+		private uint _release;
+
 		public override string   Panel  => "avatar";
 		public override string   Label  => "Avatar";
 		public override string[] Path   => new[] { "avatar", "publisher" };
@@ -44,16 +46,32 @@ namespace Nox.Avatars.Runtime.Editor {
 		public override UnityEngine.Object[] Candidates()
 			=> AvatarDescriptorHelper.Candidates();
 
+		public override void Initialize(IEditorModCoreAPI api) {
+			base.Initialize(api);
+
+			AvatarDescriptorHelper.OnAvatarSelected.RemoveListener(OnDescriptorSelected);
+			AvatarDescriptorHelper.OnAvatarSelected.AddListener(OnDescriptorSelected);
+		}
+
+		private void OnDescriptorSelected(AvatarDescriptor avatar)
+			=> RaiseSelectionChanged(avatar);
+
 		public override string Describe(UnityEngine.Object candidate)
 			=> candidate is AvatarDescriptor descriptor && !string.IsNullOrEmpty(descriptor.gameObject.scene.name)
 				? $"{descriptor.name} ({descriptor.gameObject.scene.name})"
 				: base.Describe(candidate);
 
-		// --- version -----------------------------------------------------------------------
+		// --- release -----------------------------------------------------------------------
 
-		public override ushort Version {
-			get => AvatarDescriptorHelper.CurrentAvatar?.publishVersion ?? 0;
+		public override uint Release {
+			get {
+				var pinned = AvatarDescriptorHelper.CurrentAvatar?.publishVersion ?? 0;
+
+				return pinned != 0 ? pinned : _release;
+			}
 			set {
+				_release = value;
+
 				var live = AvatarDescriptorHelper.Live(AvatarDescriptorHelper.CurrentAvatar);
 
 				if (!live)
@@ -244,12 +262,12 @@ namespace Nox.Avatars.Runtime.Editor {
 			return AssetBuildResult.Ok(outputs);
 		}
 
-		/// <summary>Writes the version to the live descriptor before the build reads it.</summary>
-		private static string WritePublishVersion(AssetPublishRequest request, ushort version) {
+		/// <summary>Writes the release to the live descriptor before the build reads it.</summary>
+		private static string WritePublishVersion(AssetPublishRequest request, uint release) {
 			var live = AvatarDescriptorHelper.Live(request?.State as AvatarDescriptor);
 
 			if (live) {
-				live.publishVersion = version;
+				live.publishVersion = release;
 				EditorUtility.SetDirty(live);
 			}
 

@@ -9,7 +9,6 @@ using Nox.CCK.Language;
 using Nox.CCK.Mods.Cores;
 using Nox.CCK.Mods.Initializers;
 using Nox.Assets;
-using Nox.CCK.Network.Assets;
 using Nox.CCK.Utils;
 using Nox.Controllers;
 using Nox.Network;
@@ -26,238 +25,232 @@ using SettingsHandler = Nox.Settings.IHandler;
 using Nox.CCK.Audio;
 using Logger = Nox.CCK.Utils.Logger;
 
-namespace Nox.Avatars.Runtime
-{
-    public class Main : IMainModInitializer, IAvatarAPI
-    {
-        public static Main Instance;
-        public IMainModCoreAPI CoreAPI;
-        public Network.Network Network;
-        private Search.Search _search;
-        private LanguagePack _lang;
-        private SettingsHandler[] _settings = Array.Empty<SettingsHandler>();
-        private AvatarCommands _commands;
+namespace Nox.Avatars.Runtime {
+	public class Main : IMainModInitializer, IAvatarAPI {
+		public static Main Instance;
+		public IMainModCoreAPI CoreAPI;
+		public Network.Network Network;
+		private Search.Search _search;
+		private LanguagePack _lang;
+		private SettingsHandler[] _settings = Array.Empty<SettingsHandler>();
+		private AvatarCommands _commands;
 
-        public static INetworkAPI NetworkAPI
-            => Instance.CoreAPI.ModAPI
-                       .GetMod("network")
-                       ?.GetInstance<INetworkAPI>();
+		public static INetworkAPI NetworkAPI
+			=> Instance.CoreAPI.ModAPI
+					   .GetMod("network")
+					   ?.GetInstance<INetworkAPI>();
 
-        /// <summary>Generic asset pipeline, shared with every other asset type.</summary>
-        public static IAssetsAPI AssetsAPI
-            => Instance == null
-                ? null
-                : Instance.CoreAPI.ModAPI
-                    .GetMod("assets")
-                    ?.GetInstance<IAssetsAPI>();
+		/// <summary>Generic asset pipeline, shared with every other asset type.</summary>
+		public static IAssetsAPI AssetsAPI
+			=> Instance == null
+				? null
+				: Instance.CoreAPI.ModAPI
+					.GetMod("assets")
+					?.GetInstance<IAssetsAPI>();
 
-        /// <summary>
-        /// Shared asset cache. Owned by the <c>assets</c> mod so every asset kind (avatars, worlds,
-        /// mods…) uses the same files, progress and events.
-        /// </summary>
-        public static IAssetCacheAPI AssetsCache
-            => Instance == null
-                ? null
-                : Instance.CoreAPI.ModAPI
-                    .GetMod("assets")
-                    ?.GetInstance<IAssetCacheAPI>();
+		/// <summary>
+		/// Shared asset cache. Owned by the <c>assets</c> mod so every asset kind (avatars, worlds,
+		/// mods...) uses the same files, progress and events.
+		/// </summary>
+		public static IAssetCacheAPI AssetsCache
+			=> Instance == null
+				? null
+				: Instance.CoreAPI.ModAPI
+					.GetMod("assets")
+					?.GetInstance<IAssetCacheAPI>();
 
-        static internal ISearchAPI SearchAPI
-            => Instance.CoreAPI.ModAPI
-                       .GetMod("search")
-                       ?.GetInstance<ISearchAPI>();
+		static internal ISearchAPI SearchAPI
+			=> Instance.CoreAPI.ModAPI
+					   .GetMod("search")
+					   ?.GetInstance<ISearchAPI>();
 
-        public static IUserAPI UserAPI
-            => Instance.CoreAPI.ModAPI
-                       .GetMod("users")
-                       ?.GetInstance<IUserAPI>();
+		public static IUserAPI UserAPI
+			=> Instance.CoreAPI.ModAPI
+					   .GetMod("users")
+					   ?.GetInstance<IUserAPI>();
 
-        internal ITableAPI TableAPI
-            => Instance.CoreAPI.ModAPI
-                       .GetMod("tables")
-                       ?.GetInstance<ITableAPI>();
+		internal ITableAPI TableAPI
+			=> Instance.CoreAPI.ModAPI
+					   .GetMod("tables")
+					   ?.GetInstance<ITableAPI>();
 
-        internal IControllerAPI ControllerAPI
-            => Instance.CoreAPI.ModAPI
-                       .GetMod("controllers")
-                       ?.GetInstance<IControllerAPI>();
+		internal IControllerAPI ControllerAPI
+			=> Instance.CoreAPI.ModAPI
+					   .GetMod("controllers")
+					   ?.GetInstance<IControllerAPI>();
 
-        /// <summary>
-        /// Avatar audio channel. Routes every (non-voice) AudioSource of an avatar
-        /// through its own dedicated mixer track so avatar volume is controllable.
-        /// </summary>
-        static internal ChannelRegister AvatarRegister;
+		/// <summary>
+		/// Avatar audio channel. Routes every (non-voice) AudioSource of an avatar
+		/// through its own dedicated mixer track so avatar volume is controllable.
+		/// </summary>
+		static internal ChannelRegister AvatarRegister;
 
-        internal ISettingAPI SettingAPI
-            => Instance.CoreAPI.ModAPI
-                       .GetMod("settings")
-                       ?.GetInstance<ISettingAPI>();
+		internal ISettingAPI SettingAPI
+			=> Instance.CoreAPI.ModAPI
+					   .GetMod("settings")
+					   ?.GetInstance<ISettingAPI>();
 
-        public void OnInitializeMain(IMainModCoreAPI api)
-        {
-            Instance = this;
-            CoreAPI = api;
+		public void OnInitializeMain(IMainModCoreAPI api) {
+			Instance = this;
+			CoreAPI = api;
 
-            api.LoggerAPI.LogDebug("Initialized");
-            _lang = CoreAPI.AssetAPI.GetAsset<LanguagePack>("lang.asset");
-            LanguageManager.AddPack(_lang);
+			api.LoggerAPI.LogDebug("Initialized");
+			_lang = CoreAPI.AssetAPI.GetAsset<LanguagePack>("lang.asset");
+			LanguageManager.AddPack(_lang);
 
-            AvatarSetup.OnCheckRequest = OnCheckRequest;
+			AvatarSetup.OnCheckRequest = OnCheckRequest;
 
-            Network = new Network.Network();
-            _search = new Search.Search();
+			Network = new Network.Network();
+			_search = new Search.Search();
 
-            // Register avatar volume channel, protected from removal.
-            AvatarRegister = new ChannelRegister("avatar", new[] { "general" }, api);
+			// Register avatar volume channel, protected from removal.
+			AvatarRegister = new ChannelRegister("avatar", new[] { "general" }, api);
 
-            _settings = new SettingsHandler[] {
-                new AvatarQueueSizeSetting(),
-                new ReloadControllerAvatarSetting()
-            };
+			_settings = new SettingsHandler[] {
+				new AvatarQueueSizeSetting(),
+				new ReloadControllerAvatarSetting(),
+				new ParametersSaveSetting()
+			};
 
-            foreach (var setting in _settings)
-                SettingAPI?.Add(setting);
+			foreach (var setting in _settings)
+				SettingAPI?.Add(setting);
 
-            _commands = new AvatarCommands();
-        }
+			_commands = new AvatarCommands();
+		}
 
-        private bool OnCheckRequest(IAvatarDescriptor descriptor)
-        {
-            var valid = true;
-            CoreAPI.EventAPI.Emit("avatar_check_request", descriptor, new Action<object[]>(OnCallback));
-            return valid;
+		private bool OnCheckRequest(IAvatarDescriptor descriptor) {
+			var valid = true;
+			CoreAPI.EventAPI.Emit("avatar_check_request", descriptor, new Action<object[]>(OnCallback));
+			return valid;
 
-            void OnCallback(object[] args)
-            {
-                if (args.Length > 0 && args[0] is false) valid = false;
-            }
-        }
+			void OnCallback(object[] args) {
+				if (args.Length > 0 && args[0] is false) valid = false;
+			}
+		}
 
-        public void OnDisposeMain()
-        {
-            _commands?.Dispose();
-            _commands = null;
+		public void OnDisposeMain() {
+			_commands?.Dispose();
+			_commands = null;
 
-            foreach (var setting in _settings)
-                SettingAPI?.Remove(setting.Path);
-            _settings = Array.Empty<SettingsHandler>();
+			foreach (var setting in _settings)
+				SettingAPI?.Remove(setting.Path);
+			_settings = Array.Empty<SettingsHandler>();
 
-            AvatarSetup.OnCheckRequest = null;
-            LanguageManager.RemovePack(_lang);
-            AvatarRegister?.Dispose();
-            AvatarRegister = null;
-            _search?.Dispose();
-            _search = null;
-            Network = null;
-            CoreAPI = null;
-            Instance = null;
-        }
+			AvatarSetup.OnCheckRequest = null;
+			LanguageManager.RemovePack(_lang);
+			AvatarRegister?.Dispose();
+			AvatarRegister = null;
+			_search?.Dispose();
+			_search = null;
+			Network = null;
+			CoreAPI = null;
+			Instance = null;
+		}
 
-        /// <summary>
-        /// Charge un avatar de secours depuis le bundle nox.avatars, en privilégiant
-        /// l'entrée de cache configurée (config "avatar.&lt;key&gt;").
-        /// Un chemin absent du bundle est signalé explicitement : un null silencieux
-        /// fait retomber tous les appelants sur l'avatar d'erreur sans cause lisible.
-        /// </summary>
-        private async UniTask<IRuntimeAvatar> LoadBundleAvatar(string path, string configKey, Dictionary<string, object> arguments, Action<float> progress, CancellationToken token) {
-            IRuntimeAvatar runtime = null;
+		/// <summary>
+		/// Charge un avatar de secours depuis le bundle nox.avatars, en privilégiant
+		/// l'entrée de cache configurée (config "avatar.&lt;key&gt;").
+		/// Un chemin absent du bundle est signalé explicitement : un null silencieux
+		/// fait retomber tous les appelants sur l'avatar d'erreur sans cause lisible.
+		/// </summary>
+		private async UniTask<IRuntimeAvatar> LoadBundleAvatar(string path, string configKey, Dictionary<string, object> arguments, Action<float> progress, CancellationToken token) {
+			IRuntimeAvatar runtime = null;
 
-            if (!string.IsNullOrEmpty(configKey)) {
-                var config = Config.Load();
-                var custom = config.Get<string>(new[] { "avatar", configKey });
+			if (!string.IsNullOrEmpty(configKey)) {
+				var config = Config.Load();
+				var custom = config.Get<string>(new[] { "avatar", configKey });
 
-                if (!string.IsNullOrEmpty(custom))
-                    runtime = await AvatarLoader.LoadFromCache(custom, arguments, progress, token);
+				if (!string.IsNullOrEmpty(custom))
+					runtime = await AvatarLoader.LoadFromCache(custom, arguments, progress, token);
 
-                if (runtime != null)
-                    return runtime;
-            }
+				if (runtime != null)
+					return runtime;
+			}
 
-            runtime = await AvatarLoader.LoadFromAssets(path, arguments, progress, token);
-            if (runtime == null)
-                Logger.LogError(
-                    $"Bundled avatar '{path}' is missing from the nox.avatars bundle "
-                    + $"and no 'avatar.{configKey}' cache entry is configured."
-                );
+			runtime = await AvatarLoader.LoadFromAssets(path, arguments, progress, token);
+			if (runtime == null)
+				Logger.LogError(
+					$"Bundled avatar '{path}' is missing from the nox.avatars bundle "
+					+ $"and no 'avatar.{configKey}' cache entry is configured."
+				);
 
-            return runtime;
-        }
+			return runtime;
+		}
 
-        public async UniTask<IRuntimeAvatar> LoadLoading(Dictionary<string, object> arguments = null, Action<float> progress = null, CancellationToken token = default) {
-            var runtimeAvatar = await LoadBundleAvatar("prefabs/loading.prefab", "loading", arguments, progress, token);
-            runtimeAvatar ??= await LoadError(arguments, progress, token);
-            return runtimeAvatar;
-        }
+		public async UniTask<IRuntimeAvatar> LoadLoading(Dictionary<string, object> arguments = null, Action<float> progress = null, CancellationToken token = default) {
+			var runtimeAvatar = await LoadBundleAvatar("prefabs/loading.prefab", "loading", arguments, progress, token);
+			runtimeAvatar ??= await LoadError(arguments, progress, token);
+			return runtimeAvatar;
+		}
 
-        public async UniTask<IRuntimeAvatar> LoadDefault(Dictionary<string, object> arguments = null, Action<float> progress = null, CancellationToken token = default) {
-            var runtimeAvatar = await LoadBundleAvatar("prefabs/default.prefab", "default", arguments, progress, token);
-            runtimeAvatar ??= await LoadError(arguments, progress, token);
-            return runtimeAvatar;
-        }
+		public async UniTask<IRuntimeAvatar> LoadDefault(Dictionary<string, object> arguments = null, Action<float> progress = null, CancellationToken token = default) {
+			var runtimeAvatar = await LoadBundleAvatar("prefabs/default.prefab", "default", arguments, progress, token);
+			runtimeAvatar ??= await LoadError(arguments, progress, token);
+			return runtimeAvatar;
+		}
 
-        public async UniTask<IRuntimeAvatar> LoadError(Dictionary<string, object> arguments = null, Action<float> progress = null, CancellationToken token = default)
-            => await LoadBundleAvatar("prefabs/error.prefab", "error", arguments, progress, token);
+		public async UniTask<IRuntimeAvatar> LoadError(Dictionary<string, object> arguments = null, Action<float> progress = null, CancellationToken token = default)
+			=> await LoadBundleAvatar("prefabs/error.prefab", "error", arguments, progress, token);
 
-        public async UniTask<IRuntimeAvatar> LoadFromPath(string path, Dictionary<string, object> arguments = null, Action<float> progress = null, CancellationToken token = default)
-            => await AvatarLoader.LoadFromPath(path, arguments, progress, token)
-                ?? await LoadError(arguments, progress, token);
+		public async UniTask<IRuntimeAvatar> LoadFromPath(string path, Dictionary<string, object> arguments = null, Action<float> progress = null, CancellationToken token = default)
+			=> await AvatarLoader.LoadFromPath(path, arguments, progress, token)
+				?? await LoadError(arguments, progress, token);
 
-        public async UniTask<IRuntimeAvatar> LoadFromAssets(ResourceIdentifier path, Dictionary<string, object> arguments = null, Action<float> progress = null, CancellationToken token = default)
-            => await AvatarLoader.LoadFromAssets(path, arguments, progress, token)
-                ?? await LoadError(arguments, progress, token);
+		public async UniTask<IRuntimeAvatar> LoadFromAssets(ResourceIdentifier path, Dictionary<string, object> arguments = null, Action<float> progress = null, CancellationToken token = default)
+			=> await AvatarLoader.LoadFromAssets(path, arguments, progress, token)
+				?? await LoadError(arguments, progress, token);
 
-        public async UniTask<IRuntimeAvatar> LoadFromCache(string hash, Dictionary<string, object> arguments = null, Action<float> progress = null, CancellationToken token = default)
-            => await AvatarLoader.LoadFromCache(hash, arguments, progress, token)
-                ?? await LoadError(arguments, progress, token);
+		public async UniTask<IRuntimeAvatar> LoadFromCache(string hash, Dictionary<string, object> arguments = null, Action<float> progress = null, CancellationToken token = default)
+			=> await AvatarLoader.LoadFromCache(hash, arguments, progress, token)
+				?? await LoadError(arguments, progress, token);
 
-        public async UniTask<IAvatar> Fetch(Identifier identifier, CancellationToken token = default)
-            => await Network.Fetch(identifier, token);
+		public async UniTask<IAvatar> Fetch(Identifier identifier, CancellationToken token = default)
+			=> await Network.Fetch(identifier, token);
 
-        public ISearchRequest MakeSearchRequest()
-            => new SearchRequest();
+		public ISearchRequest MakeSearchRequest()
+			=> new SearchRequest();
 
-        public async UniTask<IAvatar> Create(ICreateAvatarRequest data, string server)
-            => await Network.Create(AvatarCreateRequest.From(data), server);
+		public async UniTask<IAvatar> Create(ICreateAvatarRequest data, string server)
+			=> await Network.Create(AvatarCreateRequest.From(data), server);
 
-        public async UniTask<IAvatar> Update(Identifier identifier, IUpdateAvatarRequest form)
-            => await Network.Update(identifier, AvatarUpdateRequest.From(form));
+		public async UniTask<IAvatar> Update(Identifier identifier, IUpdateAvatarRequest form)
+			=> await Network.Update(identifier, AvatarUpdateRequest.From(form));
 
-        public async UniTask<bool> Delete(Identifier identifier)
-            => await Network.Delete(identifier);
+		public async UniTask<bool> Delete(Identifier identifier)
+			=> await Network.Delete(identifier);
 
-        public async UniTask<IAssetFile> ResolveBundle(Identifier identifier, CancellationToken token = default)
-            => await Network.ResolveBundle(identifier, token);
+		public async UniTask<IAssetFile> ResolveBundle(Identifier identifier, CancellationToken token = default)
+			=> await Network.ResolveBundle(identifier, token);
 
-        public async UniTask<bool> AddImage(Identifier identifier, Texture2D texture, Action<float> onProgress = null)
-            => await Network.AddImage(identifier, texture, onProgress);
+		public async UniTask<bool> AddImage(Identifier identifier, Texture2D texture, Action<float> onProgress = null)
+			=> await Network.AddImage(identifier, texture, onProgress);
 
-        /// <summary>
-        /// Downloads a cache entry into the shared cache. A <see cref="IdentifierCache"/> entry carries
-        /// the bundle identity, so a file still being analyzed is waited for instead of failing.
-        /// </summary>
-        public ICaching DownloadToCache(ICacheEntry entry, UnityAction<float> progress = null, CancellationToken token = default)
-            => AssetsCache?.Download(entry, progress, token);
+		/// <summary>
+		/// Downloads a cache entry into the shared cache. A <see cref="IdentifierCache"/> entry carries
+		/// the bundle identity, so a file still being analyzed is waited for instead of failing.
+		/// </summary>
+		public ICaching DownloadToCache(ICacheEntry entry, UnityAction<float> progress = null, CancellationToken token = default)
+			=> AssetsCache?.Download(entry, progress, token);
 
-        public ICaching GetDownload(string url, string hash)
-            => AssetsCache?.GetDownload(url, hash);
+		public ICaching GetDownload(string url, string hash)
+			=> AssetsCache?.GetDownload(url, hash);
 
-        public void RemoveFromCache(string hash)
-            => AssetsCache?.Clear(hash);
+		public void RemoveFromCache(string hash)
+			=> AssetsCache?.Clear(hash);
 
-        public bool HasInCache(string hash)
-            => AssetsCache?.Has(hash) == true;
+		public bool HasInCache(string hash)
+			=> AssetsCache?.Has(hash) == true;
 
-        public async UniTask<IFavorites> AddFavorite(Identifier identifier)
-            => await Network.AddFavorite(identifier);
+		public async UniTask<IFavorites> AddFavorite(Identifier identifier)
+			=> await Network.AddFavorite(identifier);
 
-        public async UniTask<IFavorites> RemoveFavorite(Identifier identifier)
-            => await Network.RemoveFavorite(identifier);
+		public async UniTask<IFavorites> RemoveFavorite(Identifier identifier)
+			=> await Network.RemoveFavorite(identifier);
 
-        public async UniTask<IFavorites> GetFavorites()
-            => await Network.FetchFavorites();
+		public async UniTask<IFavorites> GetFavorites()
+			=> await Network.FetchFavorites();
 
-        public async UniTask<ISearchResponse> Search(ISearchRequest data)
-            => await Network.Search(SearchRequest.From(data));
-    }
-
+		public async UniTask<ISearchResponse> Search(ISearchRequest data)
+			=> await Network.Search(SearchRequest.From(data));
+	}
 }

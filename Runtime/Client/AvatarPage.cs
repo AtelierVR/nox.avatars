@@ -25,7 +25,7 @@ namespace Nox.Avatars.Runtime.client {
 		private Identifier _identifier;
 		public IAvatar Avatar;
 		public IAssetFile Asset;
-		public ushort Version = ushort.MaxValue;
+		public uint Release = AssetIdentifierExtensions.DEFAULT_VERSION;
 		private bool _isLoading;
 
 		private EventSubscription[] _events = Array.Empty<EventSubscription>();
@@ -69,7 +69,7 @@ namespace Nox.Avatars.Runtime.client {
 				_identifier = identifier,
 				Avatar      = null,
 				Asset       = null,
-				Version     = identifier.GetVersion()
+				Release     = identifier.GetRelease()
 			};
 			page.Refresh(true).Forget();
 			return page;
@@ -82,7 +82,7 @@ namespace Nox.Avatars.Runtime.client {
 				_identifier = avatar.Identifier,
 				Avatar      = avatar,
 				Asset       = asset,
-				Version     = avatar.Identifier.GetVersion()
+				Release     = avatar.Identifier.GetRelease()
 			};
 			if (page.Asset == null)
 				page.FetchAsset(false).Forget();

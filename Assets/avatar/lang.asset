@@ -97,10 +97,6 @@ MonoBehaviour:
       value: "{0} child avatars detected. Child avatars are not supported and will be removed during the build process."
     - key: avatar.editor.notification.children_avatars.action.select_children
       value: "Select Child Avatars"
-    - key: avatar.editor.notification.cameras
-      value: "This avatar contains {0} camera(s). At runtime they are disabled and will not render to the XR eyes nor to the desktop screen."
-    - key: avatar.editor.notification.cameras.action.untag
-      value: "Untag Cameras"
     - key: avatar.editor.notification.no_avatar_descriptor.selected
       value: "No AvatarDescriptor found. Please add an AvatarDescriptor."
     - key: avatar.editor.notification.no_avatar_descriptor.found
@@ -109,8 +105,6 @@ MonoBehaviour:
       value: "Select"
     - key: avatar.editor.notification.no_avatar_descriptor.action.select_humanoids
       value: "Select Humanoid Rigs"
-    - key: avatar.editor.notification.play_mode
-      value: "Avatar Builder cannot be used in Play Mode. Please exit Play Mode to continue."
     - key: avatar.editor.notification.user_not_connected
       value: "You are not logged in. Please log in to access avatar building features."
     - key: avatar.editor.notification.user_connected
@@ -121,18 +115,6 @@ MonoBehaviour:
       value: "The Animator on the selected avatar is not configured as Humanoid. Please set the Rig type to Humanoid."
     - key: avatar.editor.notification.not_humanoid.action.select
       value: "Select Avatar"
-    - key: avatar.editor.notification.mesh_rw
-      value: "Mesh \"{0}\" has Read/Write disabled. This may cause issues during the build process."
-    - key: avatar.editor.notification.mesh_rw.action.fix
-      value: "Enable"
-    - key: avatar.editor.notification.mesh_lbsn
-      value: "Mesh \"{0}\" has Legacy Blend Shape Normals disabled. This may cause visual issues with blend shapes."
-    - key: avatar.editor.notification.mesh_lbsn.action.fix
-      value: "Enable"
-    - key: avatar.editor.notification.missing_components
-      value: "{0} missing component(s) found on the avatar. These should be removed before building."
-    - key: avatar.editor.notification.missing_components.action.remove
-      value: "Remove All"
     - key: avatar.builder.result.success
       value: "Avatar build completed successfully!"
     - key: avatar.title
@@ -179,6 +161,12 @@ MonoBehaviour:
       value: "Avatar Reload"
     - key: settings.entry.avatar.general.reload_avatar.action
       value: "Reload"
+    - key: settings.entry.avatar.general.save.label
+      value: "Parameters Storage"
+    - key: settings.entry.avatar.general.save.option.local
+      value: "Local"
+    - key: settings.entry.avatar.general.save.option.preferred_cloud
+      value: "Preferred Cloud"
     - key: settings.page.avatar.title
       value: "Avatar Settings"
     - key: settings.page.avatar.label

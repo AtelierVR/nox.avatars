@@ -120,7 +120,15 @@
     },
     {
       "type": "after",
+      "id": "tables"
+    },
+    {
+      "type": "after",
       "id": "terminal"
+    },
+    {
+      "type": "after",
+      "id": "users"
     }
   ],
   "entrypoints": {

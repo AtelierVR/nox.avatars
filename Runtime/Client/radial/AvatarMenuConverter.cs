@@ -245,21 +245,22 @@ namespace Nox.Avatars.Runtime.radial {
 				_parameter = parameter;
 			}
 
-			public async UniTask Execute(CancellationToken cancellationToken = default) {
+			public UniTask Execute(CancellationToken cancellationToken = default) {
 				var parameter = GetParameter(_parameter);
 				if (parameter == null) {
 					Logger.LogWarning($"[avatar] paramètre introuvable : {_parameter}");
-					return;
+					return UniTask.CompletedTask;
 				}
 
 				if (parameter.ValueType == ParameterType.Bool) {
 					var current = parameter.Value is bool b && b;
 					parameter.Value = !current;
 					Logger.LogDebug($"[avatar] {_parameter} = {!current}");
-					return;
+					return UniTask.CompletedTask;
 				}
 
 				Logger.LogDebug($"[avatar] {_parameter} = {parameter.Value} (toggle spécifique à venir)");
+				return UniTask.CompletedTask;
 			}
 
 			private static IParameter GetParameter(string name)

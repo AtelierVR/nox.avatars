@@ -72,12 +72,12 @@ namespace Nox.Avatars.Runtime.widget {
 			await UpdateBanner(avatar);
 		}
 
-		private async UniTask UpdateBanner(IAvatar avatar) {
+		private UniTask UpdateBanner(IAvatar avatar) {
 			var url = avatar.BestImage(16f / 9f)?.Url;
 
 			if (string.IsNullOrEmpty(url)) {
 				_container.SetActive(false);
-				return;
+				return UniTask.CompletedTask;
 			}
 
 			// Enable container so NetworkImage can start loading
@@ -93,6 +93,8 @@ namespace Nox.Avatars.Runtime.widget {
 				_container.SetActive(false);
 			});
 			networkImage.Url = url;
+
+			return UniTask.CompletedTask;
 		}
 
 		public static bool TryMake(IMenu menu, RectTransform parent, out (GameObject, IWidget) values) {

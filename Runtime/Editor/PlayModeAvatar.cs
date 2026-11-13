@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using Nox.Avatars.Parameters;
+using Nox.CCK;
 using Nox.CCK.Avatars;
 using Nox.CCK.Build;
 using Nox.CCK.Utils;
@@ -30,6 +32,22 @@ namespace Nox.Avatars.Runtime.Editor {
 			=> _bus ??= new AvatarModuleBus(this);
 
 		public Identifier Identifier { get; set; } = Identifier.Invalid;
+
+		public Identifier Owner { get; set; } = Identifier.Invalid;
+
+		private ISavableContainer _data;
+
+		/// <summary>The play mode avatar is the local player's.</summary>
+		public bool IsLocal
+			=> true;
+
+		/// <summary>The editor avatar lives as long as the scene: nothing is started for it that must be cancelled.</summary>
+		public CancellationToken Token
+			=> CancellationToken.None;
+
+		/// <summary>Values of the avatar, kept in memory: the play mode avatar persists nothing.</summary>
+		public ISavableContainer Data
+			=> _data ??= new MemoryDataContainer();
 
 
 		public async UniTask Dispose()
@@ -86,13 +104,13 @@ namespace Nox.Avatars.Runtime.Editor {
 				                param.Value = 3;
 				                break;
 
-				            case "tracking/left_hand/active":
-				            case "tracking/right_hand/active":
-				            case "tracking/head/active":
-				            case "tracking/left_foot/active":
-				            case "tracking/right_foot/active":
-				            case "tracking/left_toes/active":
-				            case "tracking/right_toes/active":
+				            case "Tracking/LeftHand/Active":
+				            case "Tracking/RightHand/Active":
+				            case "Tracking/Head/Active":
+				            case "Tracking/LeftFoot/Active":
+				            case "Tracking/RightFoot/Active":
+				            case "Tracking/LeftToes/Active":
+				            case "Tracking/RightToes/Active":
 				                param.Value = false;
 				                break;
 				        }

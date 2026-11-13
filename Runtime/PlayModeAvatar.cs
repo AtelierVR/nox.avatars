@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Nox.Avatars.Parameters;
+using Nox.CCK;
 using Nox.CCK.Avatars;
 using Nox.CCK.Build;
 using Nox.CCK.Utils;
@@ -18,7 +19,7 @@ namespace Nox.Avatars.Editor {
 		public virtual Dictionary<string, object> Arguments
 			=> new() {
 				["source"] = this,
-				["local"]  = true
+				["local"] = true
 			};
 
 		// ReSharper disable Unity.PerformanceAnalysis
@@ -36,6 +37,22 @@ namespace Nox.Avatars.Editor {
 			=> _bus ??= new AvatarModuleBus(this);
 
 		public Identifier Identifier { get; set; } = Identifier.Invalid;
+
+		public Identifier Owner { get; set; } = Identifier.Invalid;
+
+		private ISavableContainer _data;
+
+		/// <summary>The play mode avatar is the local player's.</summary>
+		public bool IsLocal
+			=> true;
+
+		/// <summary>The editor avatar lives as long as the scene: nothing is started for it that must be cancelled.</summary>
+		public CancellationToken Token
+			=> CancellationToken.None;
+
+		/// <summary>Values of the avatar, kept in memory: the play mode avatar persists nothing.</summary>
+		public ISavableContainer Data
+			=> _data ??= new MemoryDataContainer();
 
 		public virtual async UniTask Dispose()
 			=> await UniTask.Yield();
@@ -68,7 +85,6 @@ namespace Nox.Avatars.Editor {
 
 			Logger.Log("Avatar starting...");
 
-			// Temporarily disable rigging to prevent TransformStreamHandle errors during setup
 			var animator = descriptor.Animator;
 			if (!animator) {
 				Logger.LogError("Animator component missing in avatar descriptor, destroying avatar.");
@@ -76,11 +92,11 @@ namespace Nox.Avatars.Editor {
 				return;
 			}
 
-			var  rigBuilder           = animator?.GetComponent<RigBuilder>();
+			var rigBuilder = animator?.GetComponent<RigBuilder>();
 			bool wasRigBuilderEnabled = false;
 			if (rigBuilder != null) {
 				wasRigBuilderEnabled = rigBuilder.enabled;
-				rigBuilder.enabled   = false;
+				rigBuilder.enabled = false;
 			}
 
 			try {
@@ -96,51 +112,60 @@ namespace Nox.Avatars.Editor {
 					.GetModules<IParameterModule>()
 					.FirstOrDefault();
 
-				// Set parameters without triggering rigging builds
 				if (parameters != null)
-					foreach (var param in parameters.GetParameters())
-						switch (param.Name)
-        				{
-        				    case "IsLocal":
-        				    case "Grounded":
-        				        param.Value = true;
-        				        break;
-	
-        				    case "Upright":
-        				        param.Value = 1.0f;
-        				        break;
-	
-        				    case "VRMode":
-        				        param.Value = 0;
-        				        break;
-	
-        				    case "UseXR":
-        				        param.Value = false;
-        				        break;
-	
-        				    case "TrackingType":
-        				        param.Value = 3;
-        				        break;
-	
-        				    case "tracking/left_hand/active":
-        				    case "tracking/right_hand/active":
-        				    case "tracking/head/active":
-        				    case "tracking/left_foot/active":
-        				    case "tracking/right_foot/active":
-        				    case "tracking/left_toes/active":
-        				    case "tracking/right_toes/active":
-        				        param.Value = false;
-        				        break;
-        				}
+					foreach (var param in parameters.GetParameters()) {
+						if (param.Name.EndsWith("/PositionWeight")) {
+							param.Value = 0.0f;
+							continue;
+						}
+
+						switch (param.Name) {
+							case "IsLocal":
+							case "Grounded":
+								param.Value = true;
+								break;
+
+							case "Upright":
+								param.Value = 1.0f;
+								break;
+
+							case "VRMode":
+								param.Value = 0;
+								break;
+
+							case "UseXR":
+								param.Value = false;
+								break;
+
+							case "TrackingType":
+								param.Value = 3;
+								break;
+
+							case "Tracking/LeftHand/Active":
+							case "Tracking/RightHand/Active":
+							case "Tracking/Head/Active":
+							case "Tracking/LeftFoot/Active":
+							case "Tracking/RightFoot/Active":
+							case "Tracking/LeftToes/Active":
+							case "Tracking/RightToes/Active":
+								param.Value = false;
+								break;
+						}
+					}
 			} finally {
-				// Re-enable rigging after setup is complete and wait a frame
 				if (rigBuilder != null && wasRigBuilderEnabled) {
 					await UniTask.Yield();
 					rigBuilder.enabled = true;
-					// Build the rigging safely after everything is set up
 					rigBuilder.Build();
 				}
 			}
+
+			await UniTask.DelayFrame(2);
+			var rigParameters = descriptor.GetModules<IParameterModule>().FirstOrDefault();
+			if (rigParameters != null)
+				foreach (var param in rigParameters.GetParameters())
+					if (param.Name.EndsWith("/PositionWeight"))
+						param.Value = 0.0f;
 		}
 	}
 }

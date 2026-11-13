@@ -39,7 +39,7 @@ namespace Nox.Avatars.Editor {
 			try {
 				// Vérifier si CurrentAvatar est null, Missing ou valide et actif
 				if (CurrentAvatar != null && CurrentAvatar && CurrentAvatar.gameObject.activeInHierarchy) return;
-				var activeAvatars = Object.FindObjectsByType<AvatarDescriptor>(FindObjectsSortMode.None)
+				var activeAvatars = Object.FindObjectsByType<AvatarDescriptor>()
 					.Where(avatar => avatar.gameObject.activeInHierarchy)
 					.ToArray();
 				SetCurrentAvatar(activeAvatars.Length > 0 ? activeAvatars[0] : null);
@@ -54,7 +54,7 @@ namespace Nox.Avatars.Editor {
                 /// </summary>
                 public static AvatarDescriptor[] Candidates() {
                         try {
-                                return Object.FindObjectsByType<AvatarDescriptor>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+                                return Object.FindObjectsByType<AvatarDescriptor>(FindObjectsInactive.Include)
                                         .Where(avatar => avatar && avatar.gameObject.activeInHierarchy)
                                         .ToArray();
                         } catch {

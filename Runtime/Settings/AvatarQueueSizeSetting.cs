@@ -25,7 +25,7 @@ namespace Nox.Avatars.Runtime.Settings {
 		protected override GameObject GetPrefab()
 			=> Main.Instance.CoreAPI.AssetAPI.GetAsset<GameObject>("settings:prefabs/range.prefab");
 
-		internal static int Value {
+		internal static new int Value {
 			get {
 				var raw = Mathf.RoundToInt(Config.Load().Get(ConfigKey, DefaultValue));
 				return Mathf.Clamp(raw, MinValue, MaxValue);

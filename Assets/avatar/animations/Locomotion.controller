@@ -118,7 +118,7 @@ BlendTree:
     m_Position: {x: 2.4495, y: 2.4495}
     m_TimeScale: 1
     m_CycleOffset: 0
-    m_DirectBlendParameter: VelocityX
+    m_DirectBlendParameter: Velocity/X
     m_Mirror: 0
   - serializedVersion: 2
     m_Motion: {fileID: 7400000, guid: 89733e567da67a14697dae53f1395d90, type: 2}
@@ -126,7 +126,7 @@ BlendTree:
     m_Position: {x: -2.4495, y: 2.4495}
     m_TimeScale: 1
     m_CycleOffset: 0
-    m_DirectBlendParameter: VelocityX
+    m_DirectBlendParameter: Velocity/X
     m_Mirror: 0
   - serializedVersion: 2
     m_Motion: {fileID: 7400000, guid: 4c9699d3f6fd23c47b87e4dc84f0b177, type: 2}
@@ -134,7 +134,7 @@ BlendTree:
     m_Position: {x: -2.4495, y: -2.4495}
     m_TimeScale: 1
     m_CycleOffset: 0
-    m_DirectBlendParameter: VelocityX
+    m_DirectBlendParameter: Velocity/X
     m_Mirror: 0
   - serializedVersion: 2
     m_Motion: {fileID: 7400000, guid: fd1374a74795e2f4590670e0331d6209, type: 2}
@@ -142,10 +142,10 @@ BlendTree:
     m_Position: {x: 2.4495, y: -2.4495}
     m_TimeScale: 1
     m_CycleOffset: 0
-    m_DirectBlendParameter: VelocityX
+    m_DirectBlendParameter: Velocity/X
     m_Mirror: 0
-  m_BlendParameter: SmoothVelocityX
-  m_BlendParameterY: SmoothVelocityZ
+  m_BlendParameter: Smooth/Velocity/X
+  m_BlendParameterY: Smooth/Velocity/Z
   m_MinThreshold: 0
   m_MaxThreshold: 0
   m_UseAutomaticThresholds: 1
@@ -163,8 +163,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9c7141cb93dd4e79aa54ad8a210dd306, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Nox.CCK.Avatars.StateMachines::Nox.CCK.Avatars.StateMachines.LerpParameter
-  input: VelocityZ
-  output: SmoothVelocityZ
+  input: Velocity/Z
+  output: Smooth/Velocity/Z
   speed: 10
 --- !u!114 &-6316264285423965028
 MonoBehaviour:
@@ -178,8 +178,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9c7141cb93dd4e79aa54ad8a210dd306, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Nox.CCK.Avatars.StateMachines::Nox.CCK.Avatars.StateMachines.LerpParameter
-  input: VelocityX
-  output: SmoothVelocityX
+  input: Velocity/X
+  output: Smooth/Velocity/X
   speed: 10
 --- !u!1101 &-5842019779281400844
 AnimatorStateTransition:
@@ -295,7 +295,7 @@ AnimatorStateTransition:
   m_Name: 
   m_Conditions:
   - m_ConditionMode: 4
-    m_ConditionEvent: VelocityY
+    m_ConditionEvent: Velocity/Y
     m_EventTreshold: -2.4525
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: -4565363767241124709}
@@ -351,7 +351,7 @@ AnimatorStateTransition:
   m_Name: 
   m_Conditions:
   - m_ConditionMode: 3
-    m_ConditionEvent: VelocityY
+    m_ConditionEvent: Velocity/Y
     m_EventTreshold: 2.5
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: 5615247412603245113}
@@ -376,19 +376,19 @@ AnimatorController:
   m_Name: Locomotion
   serializedVersion: 6
   m_AnimatorParameters:
-  - m_Name: VelocityX
+  - m_Name: Velocity/X
     m_Type: 1
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
     m_Controller: {fileID: 9100000}
-  - m_Name: VelocityZ
+  - m_Name: Velocity/Z
     m_Type: 1
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
     m_Controller: {fileID: 9100000}
-  - m_Name: VelocityY
+  - m_Name: Velocity/Y
     m_Type: 1
     m_DefaultFloat: 0
     m_DefaultInt: 0
@@ -400,13 +400,13 @@ AnimatorController:
     m_DefaultInt: 0
     m_DefaultBool: 1
     m_Controller: {fileID: 9100000}
-  - m_Name: SmoothVelocityX
+  - m_Name: Smooth/Velocity/X
     m_Type: 1
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
     m_Controller: {fileID: 9100000}
-  - m_Name: SmoothVelocityZ
+  - m_Name: Smooth/Velocity/Z
     m_Type: 1
     m_DefaultFloat: 0
     m_DefaultInt: 0
@@ -554,7 +554,7 @@ BlendTree:
     m_Position: {x: 0, y: 0}
     m_TimeScale: 1
     m_CycleOffset: 0
-    m_DirectBlendParameter: VelocityX
+    m_DirectBlendParameter: Velocity/X
     m_Mirror: 0
   - serializedVersion: 2
     m_Motion: {fileID: 8908273484855622883, guid: 1455f282db7117d419994bb5c5f3acc2, type: 3}
@@ -562,7 +562,7 @@ BlendTree:
     m_Position: {x: 0, y: 0}
     m_TimeScale: 1
     m_CycleOffset: 0
-    m_DirectBlendParameter: VelocityX
+    m_DirectBlendParameter: Velocity/X
     m_Mirror: 0
   - serializedVersion: 2
     m_Motion: {fileID: 3094330708855449807, guid: b1844fbe628f5bf4ab29e6c68912a708, type: 3}
@@ -570,10 +570,10 @@ BlendTree:
     m_Position: {x: 0, y: 0}
     m_TimeScale: 1
     m_CycleOffset: 0
-    m_DirectBlendParameter: VelocityX
+    m_DirectBlendParameter: Velocity/X
     m_Mirror: 0
-  m_BlendParameter: VelocityY
-  m_BlendParameterY: VelocityX
+  m_BlendParameter: Velocity/Y
+  m_BlendParameterY: Velocity/X
   m_MinThreshold: -10
   m_MaxThreshold: 2.5
   m_UseAutomaticThresholds: 0
