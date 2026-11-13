@@ -42,7 +42,7 @@ namespace Nox.CCK.Avatars {
 
 		public uint     publishId;
 		public string   publishServer;
-		public ushort   publishVersion;
+		public uint   publishVersion;
 		#endif
 
 		#endregion

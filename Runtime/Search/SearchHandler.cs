@@ -7,7 +7,7 @@ using UnityEngine;
 namespace Nox.Avatars.Runtime.Search {
 	public class SearchHandler : IHandler {
 		public string GetId()
-			=> Main.Instance.CoreAPI.ModMetadata.GetId();
+			=> Main.Instance.CoreAPI.ModMetadata.Id;
 
 		public string GetTitleKey()
 			=> "avatar.search.title";

@@ -6,6 +6,7 @@
         "UniTask",
         "Nox.Avatars",
         "Nox.Players",
+        "Nox.Assets",
         "UnityEngine.TerrainModule"
     ],
     "includePlatforms": [],

@@ -344,38 +344,21 @@ namespace Nox.Avatars.Pipeline {
 				Logger.Log("No compilable scripts found in the loaded scenes.");
 
 			var compiler = new Compiler(compilableScripts);
-			if (!await compiler.Compile()) 
+			if (!await compiler.Compile())
 				return new BuildResult {
 					Type = BuildResultType.Failed,
 					Message = "Script compilation failed. Original scenes have been restored from backup."
 				};
-			
-			var removeScripts = mainObject
-				.GetComponentsInChildren<IRemoveOnBuild>(true)
-				.ToArray();
 
-			var exceptions = new List<Exception>();
+			var removals = StripRemoveOnBuild(mainObject);
 
-			foreach (var script in removeScripts)
-				try {
-					if (script == null) continue;
-					Logger.Log($"Removing script: {script.GetType().Name}");
-					script.OnRemoveOnBuild();
-					if (script is Object scriptObject) // In case the script removed itself
-						scriptObject.DestroyImmediate();
-				} catch (Exception e) {
-					var ex = new Exception($"Failed to remove script {script?.GetType().Name ?? "null"}", e);
-					Logger.LogError(ex);
-					exceptions.Add(ex);
-				}
-
-			if (exceptions.Count > 0)
+			if (removals.Count > 0)
 				return new BuildResult {
 					Type = BuildResultType.Failed,
 					Message = string.Join(
 						"\n",
 						new[] { "Script removal failed:" }
-							.Concat(exceptions.Select(e => "\t" + e.Message))
+							.Concat(removals.Select(e => "\t" + e.Message))
 							.Concat(new[] { "See console for details." })
 					)
 				};
@@ -392,6 +375,80 @@ namespace Nox.Avatars.Pipeline {
 
 			// Wait a frame to ensure file operations are complete
 			await UniTask.Yield();
+
+			return new BuildResult {
+				Type = BuildResultType.Success
+			};
+		}
+
+		/// <summary>
+		/// Removes the <see cref="IRemoveOnBuild"/> components of a hierarchy: they are editor-only helpers
+		/// (play-mode loader, test scripts, build notes) and must never reach a bundle.
+		/// </summary>
+		/// <returns>The failures, empty when every component was removed.</returns>
+		private static List<Exception> StripRemoveOnBuild(GameObject root) {
+			var exceptions = new List<Exception>();
+			if (!root)
+				return exceptions;
+
+			foreach (var script in root.GetComponentsInChildren<IRemoveOnBuild>(true)) {
+				if (script == null)
+					continue;
+
+				try {
+					Logger.Log($"Removing script: {script.GetType().Name}");
+					script.OnRemoveOnBuild();
+
+					if (script is Object scriptObject) // In case the script removed itself
+						scriptObject.DestroyImmediate();
+				} catch (Exception e) {
+					var ex = new Exception($"Failed to remove script {script.GetType().Name}", e);
+					Logger.LogError(ex);
+					exceptions.Add(ex);
+				}
+			}
+
+			return exceptions;
+		}
+
+		/// <summary>
+		/// Strips the removable components of the prefab asset the bundle is built from.
+		/// <para>
+		/// Stripping the scene is not enough: a build started from a prefab (prefab mode, or a prefab the
+		/// scene does not own) never passes through <see cref="CompileScripts"/>, and the components then
+		/// ship. In game they run their editor-time logic - the play-mode loader prepares the avatar again
+		/// and resets its IK weights, which leaves it standing.
+		/// </para>
+		/// <para>
+		/// The prefab contents are edited, not the source object, so the project stays untouched.
+		/// </para>
+		/// </summary>
+		private static BuildResult StripRemoveOnBuildFromPrefab(string prefabPath) {
+			var root = PrefabUtility.LoadPrefabContents(prefabPath);
+
+			try {
+				var failures = StripRemoveOnBuild(root);
+				if (failures.Count > 0)
+					return new BuildResult {
+						Type = BuildResultType.Failed,
+						Message = $"Failed to strip the removable components of '{prefabPath}': {failures[0].Message}"
+					};
+
+				var leftovers = root.GetComponentsInChildren<IRemoveOnBuild>(true);
+				if (leftovers.Length > 0)
+					return new BuildResult {
+						Type = BuildResultType.Failed,
+						Message = $"'{prefabPath}' still carries {leftovers.Length} component(s) implementing "
+								  + $"{nameof(IRemoveOnBuild)}: they would end up in the bundle "
+								  + $"({string.Join(", ", leftovers.Select(component => component.GetType().Name))})."
+					};
+
+				PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
+			} finally {
+				PrefabUtility.UnloadPrefabContents(root);
+			}
+
+			Logger.Log($"Stripped the editor-only components of '{prefabPath}'.");
 
 			return new BuildResult {
 				Type = BuildResultType.Success
@@ -480,6 +537,12 @@ namespace Nox.Avatars.Pipeline {
 				// Refresh so Unity picks up the new prefab
 				AssetDatabase.Refresh();
 				await UniTask.Yield();
+
+				// The bundle is built from this prefab, not from the scene: strip the components that must never
+				// ship here too, and fail the build if any survives.
+				var strip = StripRemoveOnBuildFromPrefab(prefabPath);
+				if (strip.Type != BuildResultType.Success)
+					return strip;
 
 				Logger.Log($"Successfully processed avatar prefab");
 				return new BuildResult {

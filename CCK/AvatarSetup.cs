@@ -96,6 +96,9 @@ namespace Nox.CCK.Avatars {
 					}
 			}
 
+			foreach (var skinned in gameObject.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+				skinned.updateWhenOffscreen = false;
+
 			var compilable = gameObject
 				.GetComponentsInChildren<ICompilable>(true)
 				.OrderBy(c => c.CompileOrder)

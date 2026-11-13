@@ -4,9 +4,9 @@ using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Newtonsoft.Json;
+using Nox.Assets;
 using Nox.CCK.Avatars;
 using Nox.CCK.Convertors;
-using Nox.CCK.Network;
 using Nox.CCK.Network.Assets;
 using Nox.CCK.Utils;
 using Nox.Network.Assets;
@@ -198,9 +198,9 @@ namespace Nox.Avatars.Runtime.Network {
 				return null;
 			}
 
-			var version = ide.GetVersion();
+			var version = ide.GetRelease();
 
-			var release = version == AvatarIdentifierExtensions.DefaultVersion
+			var release = AssetIdentifierExtensions.IsPreferredVersion(version)
 				? await assets.FetchPreferredRelease(address, Endpoint, id, cancellationToken)
 				: await assets.FetchRelease(address, Endpoint, id, version.ToString(), false, cancellationToken);
 
@@ -251,7 +251,7 @@ namespace Nox.Avatars.Runtime.Network {
 
 		/// <summary>
 		/// Polls the dedicated file status endpoint
-		/// (<c>GET …/releases/{release}/files/{fileRef}/status</c>, no bytes streamed) and returns
+		/// (<c>GET .../releases/{release}/files/{fileRef}/status</c>, no bytes streamed) and returns
 		/// what a wait loop needs: the status and the <c>refetch_at</c> cadence.
 		/// <para>
 		/// The release is resolved again, so a caller only needs the identifier and the file it is
@@ -284,7 +284,7 @@ namespace Nox.Avatars.Runtime.Network {
 				: file.Name;
 			var slot       = await assets.FetchFile(address, Endpoint, id, releaseRef, reference, token);
 
-			return slot != null 
+			return slot != null
 				? new AssetStatusSnapshot(slot.Status, slot.RefetchAt)
 				: null;
 		}

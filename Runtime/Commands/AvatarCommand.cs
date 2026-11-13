@@ -12,7 +12,7 @@ namespace Nox.Avatars.Runtime.Commands {
 	/// current user.
 	/// <para>
 	/// <c>&lt;hash&gt;</c> is the name of a bundle in the avatar cache (see <see cref="AvatarCache"/>);
-	/// <c>&lt;identifier&gt;</c> is a server avatar identifier (<c>a:42@server</c>, <c>42@server</c>, …).
+	/// <c>&lt;identifier&gt;</c> is a server avatar identifier (<c>a:42@server</c>, <c>42@server</c>, ...).
 	/// For an identifier, the avatar is also saved on the current user account, like the avatar picker
 	/// does (<c>IUserAPI.UpdateCurrent</c>).
 	/// </para>
