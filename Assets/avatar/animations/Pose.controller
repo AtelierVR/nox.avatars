@@ -15,9 +15,17 @@ MonoBehaviour:
   parts:
   - part: 1
     mode: 1
+  - part: 15
+    mode: 1
   - part: 16
     mode: 1
+  - part: 17
+    mode: 1
+  - part: 19
+    mode: 1
   - part: 20
+    mode: 1
+  - part: 21
     mode: 1
 --- !u!114 &-7000000000000000024
 MonoBehaviour:
@@ -52,15 +60,35 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Nox.CCK.Avatars.StateMachines::Nox.CCK.Avatars.StateMachines.TrackingControl
   parts:
+  - part: 1
+    mode: 1
+  - part: 3
+    mode: 1
+  - part: 4
+    mode: 1
+  - part: 7
+    mode: 1
+  - part: 8
+    mode: 1
   - part: 9
+    mode: 1
+  - part: 11
+    mode: 1
+  - part: 12
     mode: 1
   - part: 13
     mode: 1
-  - part: 1
+  - part: 15
     mode: 1
   - part: 16
     mode: 1
+  - part: 17
+    mode: 1
+  - part: 19
+    mode: 1
   - part: 20
+    mode: 1
+  - part: 21
     mode: 1
 --- !u!114 &-7000000000000000022
 MonoBehaviour:
@@ -75,17 +103,37 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Nox.CCK.Avatars.StateMachines::Nox.CCK.Avatars.StateMachines.TrackingControl
   parts:
+  - part: 1
+    mode: 1
+  - part: 3
+    mode: 1
+  - part: 4
+    mode: 1
   - part: 5
+    mode: 1
+  - part: 7
+    mode: 1
+  - part: 8
     mode: 1
   - part: 9
     mode: 1
+  - part: 11
+    mode: 1
+  - part: 12
+    mode: 1
   - part: 13
     mode: 1
-  - part: 1
+  - part: 15
     mode: 1
   - part: 16
     mode: 1
+  - part: 17
+    mode: 1
+  - part: 19
+    mode: 1
   - part: 20
+    mode: 1
+  - part: 21
     mode: 1
 --- !u!114 &-7000000000000000020
 MonoBehaviour:
@@ -102,13 +150,35 @@ MonoBehaviour:
   parts:
   - part: 5
     mode: 2
+  - part: 1
+    mode: 0
+  - part: 3
+    mode: 0
+  - part: 4
+    mode: 0
+  - part: 7
+    mode: 0
+  - part: 8
+    mode: 0
   - part: 9
+    mode: 0
+  - part: 11
+    mode: 0
+  - part: 12
     mode: 0
   - part: 13
     mode: 0
+  - part: 15
+    mode: 0
   - part: 16
     mode: 0
+  - part: 17
+    mode: 0
+  - part: 19
+    mode: 0
   - part: 20
+    mode: 0
+  - part: 21
     mode: 0
 --- !u!1101 &-7000000000000000013
 AnimatorStateTransition:

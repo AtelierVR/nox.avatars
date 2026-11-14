@@ -52,10 +52,10 @@ flattened into individual `.anim` assets.
 
   | Value | State | Motion | Behaviour |
   |---|---|---|---|
-  | 0 | `Normal` | none, *Write Defaults off* (the layer writes nothing, the avatar is fully driven by the player) | `TrackingControl` → Head/hands/feet in **Tracking** |
-  | 1 | `Presentation` | `standards/Armature_Idle_Talking_Loop.anim` | `TrackingControl` → all in **Animation** |
-  | 2 | `Calibration` | `standards/Armature_A_TPose.anim` | `TrackingControl` → all in **Animation**, `PlayableLayerControl` → stops `Locomotion` on enter, starts it on exit |
-  | 3 | `Sitting` | `standards/Armature_Sitting_Idle_Loop.anim` | `TrackingControl` → hips/feet in **Animation** |
+  | 0 | `Normal` | none, *Write Defaults off* (the layer writes nothing, the avatar is fully driven by the player) | `TrackingControl` → Head in **Tracking**, every other rig part in **Normal** (the controller decides) |
+  | 1 | `Presentation` | `standards/Armature_Idle_Talking_Loop.anim` | `TrackingControl` → every rig part in **Animation** |
+  | 2 | `Calibration` | `standards/Armature_A_TPose.anim` | `TrackingControl` → every rig part in **Animation** except the Head, left to the player so the eyes stay on the camera; `PlayableLayerControl` → stops `Locomotion` on enter, starts it on exit |
+  | 3 | `Sitting` | `standards/Armature_Sitting_Idle_Loop.anim` | `TrackingControl` → hips, lower legs, feet and toes in **Animation**; head, hands and arms left to the player |
 
   Because the `Normal` state writes nothing, the layer can stay enabled at full weight and the game
   only has to write the integer: this is how a full-body calibration puts the avatar in its reference
