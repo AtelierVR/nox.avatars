@@ -52,7 +52,7 @@ namespace Nox.Avatars.Runtime {
 				}
 
 				// Load the avatar from the bundle (prefab). A Nox bundle exposes it as "Avatar";
-				// other builders (VRChat) use their own name, so fall back to the first prefab.
+				// other builders use their own name, so fall back to the first prefab.
 				var assetNames = avatar.Bundle.AssetBundle.GetAllAssetNames();
 				var prefabName = assetNames.FirstOrDefault(name => name.Equals("Avatar", StringComparison.OrdinalIgnoreCase))
 							  ?? assetNames.FirstOrDefault(name => name.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase));
@@ -82,7 +82,7 @@ namespace Nox.Avatars.Runtime {
 					return null;
 				}
 
-				// Not a Nox avatar: let an importer (VRChat, ...) handle the bundle without instantiating it.
+				// Not a Nox avatar: let an external importer handle the bundle without instantiating it.
 				if (prefab.GetComponent<IAvatarDescriptor>() == null) {
 					Logger.LogDebug($"Bundle '{path}' has no Nox AvatarDescriptor, trying the registered importers.");
 					await avatar.Dispose();
@@ -107,7 +107,7 @@ namespace Nox.Avatars.Runtime {
 				avatar.Descriptor = avatar.Root.GetComponent<IAvatarDescriptor>();
 
 				if (avatar.Descriptor == null) {
-					// Not a Nox avatar: let an importer (VRChat, ...) handle the bundle.
+					// Not a Nox avatar: let an external importer handle the bundle.
 					Logger.LogDebug($"Bundle '{path}' has no Nox AvatarDescriptor, trying the registered importers.");
 					await avatar.Dispose();
 					return null;

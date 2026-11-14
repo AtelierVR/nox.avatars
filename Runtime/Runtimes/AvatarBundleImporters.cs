@@ -8,8 +8,8 @@ using Logger = Nox.CCK.Utils.Logger;
 
 namespace Nox.Avatars.Runtime {
 	/// <summary>
-	/// Extension point for avatar AssetBundles that are not Nox avatars (for example a VRChat
-	/// <c>.vrca</c>): when <see cref="AssetBundleRuntimeAvatar"/> cannot find a Nox descriptor,
+	/// Extension point for avatar AssetBundles that are not Nox avatars (an avatar built for
+	/// another engine): when <see cref="AssetBundleRuntimeAvatar"/> cannot find a Nox descriptor,
 	/// <see cref="AvatarLoader"/> asks the registered importers to convert the bundle instead.
 	/// </summary>
 	public interface IAvatarBundleImporter {

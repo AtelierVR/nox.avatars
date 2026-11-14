@@ -89,7 +89,7 @@ namespace Nox.Avatars.Runtime
                     return avatar;
                 }
 
-                // The bundle has no Nox AvatarDescriptor: give external importers (VRChat, ...) a chance.
+                // The bundle has no Nox AvatarDescriptor: give the external importers a chance.
                 var imported = await AvatarBundleImporters.TryLoad(path, arguments, progress, token);
                 if (imported != null) {
                     InvokeAdded(imported);
