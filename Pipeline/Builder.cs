@@ -9,6 +9,7 @@ using Nox.CCK.Build;
 using Nox.CCK.Utils;
 using UnityEditor;
 using UnityEditor.Build.Pipeline;
+using UnityEditor.Build.Pipeline.Tasks;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Events;
@@ -124,8 +125,6 @@ namespace Nox.Avatars.Pipeline {
 				if (validation.Type != BuildResultType.Success)
 					return Finish(validation);
 
-				// A bundle build can switch Unity's active platform (legacy API): capture it here so it can
-				// be restored once EVERY target has been built.
 				var previousPlatform = PlatformExtensions.CurrentPlatform;
 
 				IsBuilding = true;
@@ -227,8 +226,6 @@ namespace Nox.Avatars.Pipeline {
 					// Cleanup state
 					IsBuilding = false;
 
-					// Nothing should leave the editor on a target platform (e.g. Linux) after a build started
-					// from Windows: switch back to the previous one, once all targets are done.
 					RestorePlatform(previousPlatform);
 				}
 			} catch (Exception e) {
@@ -793,37 +790,81 @@ namespace Nox.Avatars.Pipeline {
 				AssetDatabase.Refresh();
 				AssetDatabase.SaveAssets();
 
-				var manifest = CompatibilityBuildPipeline.BuildAssetBundles(
-					outputPath,
-					assetBundleBuilds,
-					options,
-					buildTarget
-				);
+				var parameters = new BundleBuildParameters(
+					buildTarget,
+					BuildPipeline.GetBuildTargetGroup(buildTarget),
+					outputPath
+				) {
+					UseCache = (options & BuildAssetBundleOptions.ForceRebuildAssetBundle) == 0
+				};
 
-				bool success = manifest;
+				var tasks = DefaultBuildTasks
+					.Create(DefaultBuildTasks.Preset.AssetBundleCompatible)
+					.Where(task => task is not SwitchToBuildPlatform)
+					.ToList();
 
-				if (success) {
-					Logger.Log("AssetBundle build completed successfully with CompatibilityBuildPipeline.");
+				ReturnCode code;
+
+				try {
+					code = ContentPipeline.BuildAssetBundles(parameters, new BundleBuildContent(assetBundleBuilds), out _, tasks);
+				} catch (Exception e) {
+					Logger.LogError($"ContentPipeline.BuildAssetBundles failed: {e.Message}");
+					return false;
 				}
-				else {
-					Logger.LogError("Both BuildPipeline methods failed. No manifest was created.");
 
-					// Additional debugging information
+				if (code != ReturnCode.Success) {
+					Logger.LogError($"AssetBundle build failed ({code}).");
+
+					if (code == ReturnCode.UnsavedChanges) {
+						var dirtyScenes = DirtyScenes();
+
+						Logger.LogError(
+							dirtyScenes.Length > 0
+								? $"Loaded scenes with unsaved changes: {string.Join(", ", dirtyScenes)}. Save them and build again."
+								: "A loaded scene has unsaved changes: save the open scenes and build again."
+						);
+					}
+
 					Logger.LogError($"Output path contents:");
 					if (Directory.Exists(outputPath)) {
 						var files = Directory.GetFiles(outputPath, "*", SearchOption.AllDirectories);
-						foreach (var file in files) {
+						foreach (var file in files)
 							Logger.LogError($"  - {file}");
-						}
 					}
+
+					return false;
 				}
 
-				return success;
+				foreach (var bundle in assetBundleBuilds) {
+					var bundlePath = Path.Combine(outputPath, bundle.assetBundleName);
+
+					if (File.Exists(bundlePath))
+						continue;
+
+					Logger.LogError($"AssetBundle '{bundle.assetBundleName}' was not written to '{outputPath}'.");
+					return false;
+				}
+
+				Logger.Log("AssetBundle build completed successfully.");
+				return true;
 			} catch (Exception e) {
 				Logger.LogError($"AssetBundle build failed with exception: {e.Message}");
 				Logger.LogError($"Stack trace: {e.StackTrace}");
 				return false;
 			}
+		}
+
+		private static string[] DirtyScenes() {
+			var scenes = new List<string>();
+
+			for (var i = 0; i < EditorSceneManager.sceneCount; i++) {
+				var scene = EditorSceneManager.GetSceneAt(i);
+
+				if (scene.isDirty)
+					scenes.Add(string.IsNullOrEmpty(scene.path) ? scene.name : scene.path);
+			}
+
+			return scenes.ToArray();
 		}
 
 		/// <summary>
