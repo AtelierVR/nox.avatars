@@ -82,6 +82,19 @@ namespace Nox.Avatars.Runtime.Editor {
 			}
 		}
 
+		public override Platform[] Platforms {
+			get => AvatarDescriptorHelper.CurrentAvatar?.Targets ?? Array.Empty<Platform>();
+			set {
+				var live = AvatarDescriptorHelper.Live(AvatarDescriptorHelper.CurrentAvatar);
+
+				if (!live)
+					return;
+
+				live.Targets = value;
+				EditorUtility.SetDirty(live);
+			}
+		}
+
 		// --- attached asset ----------------------------------------------------------------
 
 		public override async UniTask<IAsset> AttachAsync(uint id) {
