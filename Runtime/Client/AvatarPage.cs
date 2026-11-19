@@ -132,6 +132,11 @@ namespace Nox.Avatars.Runtime.client {
 			=> GetDownload()?.Cancel();
 
 		public void DownloadAsset() {
+			if (Asset == null) {
+				Logger.LogWarning("Cannot download asset, no compatible file.");
+				return;
+			}
+
 			if (IsDownloading().Item1) {
 				Logger.Log("Asset is already downloading, no need to start again.");
 				return;

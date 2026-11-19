@@ -51,9 +51,17 @@ namespace Nox.Avatars.Runtime.client {
 				.Equals(Page.Avatar.Identifier);
 		}
 
+		public void UpdateAssetAvailability(bool hasAsset) {
+			if (cacheButton)
+				cacheButton.interactable = hasAsset;
+
+			if (!hasAsset && selectButton)
+				selectButton.interactable = false;
+		}
+
 		public void UpdateSelectButton() {
 			var isSelected = IsCurrentAvatar();
-			selectButton.interactable = !isSelected;
+			selectButton.interactable = Page?.Asset != null && !isSelected;
 			selectIcon.sprite = Client.GetAsset<Sprite>(
 				isSelected
 					? "ui:icons/selected.png"
@@ -116,6 +124,7 @@ namespace Nox.Avatars.Runtime.client {
 			withBanner.SetActive(false);
 			withoutBanner.SetActive(true);
 			descriptionContainer.SetActive(false);
+			UpdateAssetAvailability(false);
 		}
 
 		public void UpdateLoading() {
@@ -129,6 +138,7 @@ namespace Nox.Avatars.Runtime.client {
 			withBanner.SetActive(false);
 			withoutBanner.SetActive(true);
 			descriptionContainer.SetActive(false);
+			UpdateAssetAvailability(false);
 		}
 
 		public void UpdateContent(IAvatar avatar, IAssetFile asset) {
@@ -156,6 +166,7 @@ namespace Nox.Avatars.Runtime.client {
 			HoverCache(_isCachedHover);
 			HoverFavorite(_isFavoriteHover);
 			UpdateSelectButton();
+			UpdateAssetAvailability(asset != null);
 		}
 
 		private void UpdateBanner(IAvatar avatar) {
@@ -263,6 +274,9 @@ namespace Nox.Avatars.Runtime.client {
 		}
 
 		private void OnCacheClicked() {
+			if (Page == null || Page.Asset == null)
+				return;
+
 			if (Page.IsDownloading().Item1) {
 				Page.CancelDownload();
 				return;
